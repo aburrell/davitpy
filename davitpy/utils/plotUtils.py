@@ -172,8 +172,7 @@ class mapObj(basemap.Basemap):
         super(mapObj, self).__init__(projection=projection,
                                      resolution=resolution, lat_0=self.lat_0,
                                      lon_0=self.lon_0, width=width,
-                                     height=height, boundinglat=boundinglat,
-                                     **kwargs)
+                                     height=height, **kwargs)
 
         if ax is not None:
             mapObj.ax = ax
