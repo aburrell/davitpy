@@ -1131,7 +1131,8 @@ def update_bs_w_scan(scan, hard, min_pnts=3,
                      region_hmin={"D":75.0,"E":115.0,"F":150.0},
                      rg_box=[2,5,10,20], rg_max=[5,25,40,76],
                      vh_box=[50.0,50.0,50.0,150.0], max_hop=3.0, tdiff=None,
-                     tdiff_e=None, ptest=True, strict_gs=False, logfile=None,
+                     tdiff_args=list(), tdiff_e=None, tdiff_e_args=list(),
+                     ptest=True, strict_gs=False, logfile=None,
                      log_level=logging.WARNING, step=6):
     '''
     Updates the propagation path, elevation, backscatter type, structure flag,
@@ -1167,11 +1168,28 @@ def update_bs_w_scan(scan, hard, min_pnts=3,
         The maximum hop to consider for the range gate and height criteria
         specified by each list element in rg_box, srg_box, vh_box, and svh_box.
         (default=[3.0])
-    tdiff : (float or NoneType)
-        tdiff values (in microsec) or None (to use the hardware value)
+    tdiff : (function or NoneType)
+        A function to retrieve tdiff values (in microsec) using the radar ID
+        number, current datetime, and transmisson frequency as input.
+        Additional inputs may be specified using tdiff_args.  Example:
+        def get_tdiff(stid, time, tfreq, filename) { do things } return tdiff
+        tdiff=get_tdiff, tdiff_args=["tdiff_file"]
         (default=None)
-    tdiff_e : (float or NoneType)
-        tdiff error (in microsec) or None. (default=None)
+    tdiff_args : (list)
+        A list specifying any arguements other than radar, time, and
+        transmission frequency to run the specified tdiff function.
+        (default=list())
+    tdiff_e : (function or NoneType)
+        A function to retrieve tdiff error values (in microsec) using the radar
+        ID number, current datetime, and transmisson frequency as input.
+        Additionalinputs may be specified using tdiff_e_args.  Example:
+        def get_tdiffe(stid, time, tfreq, filename) { do things } return tdiffe
+        tdiff_e=get_tdiffe, tdiff_e_args=["tdiff_file"]
+        (default=None)
+    tdiff_e_args : (list)
+        A list specifying any arguements other than radar, time, and
+        transmission frequency to run the specified tdiff_e function.
+        (default=list())
     ptest : (boolian)
         Perform test to see if propagation modes are realistic? (default=True)
     strict_gs : (boolian)
@@ -1221,7 +1239,7 @@ def update_bs_w_scan(scan, hard, min_pnts=3,
         beam.fit.gflg : updated : Flag indicating backscatter type
                                   (1=ground, 0=ionospheric, -1=indeterminate)
         beam.prm.tdiff : added : tdiff used in elevation (microsec)
-        beam.prm.tdiff_e : possibly added : tdiff error (microsec)
+        beam.prm.tdiff_e : added : tdiff error (microsec)
     '''
     import davitpy.pydarn.sdio as sdio
     import davitpy.pydarn.radar as pyrad
@@ -1296,20 +1314,6 @@ def update_bs_w_scan(scan, hard, min_pnts=3,
         logging.error(estr)
         return None
 
-    if isinstance(tdiff, int):
-        tdiff = float(tdiff)
-    if not isinstance(tdiff, float) and tdiff is not None:
-        estr = '{:s}tdiff must be a float'.format(estr)
-        logging.error(estr)
-        return None
-
-    if isinstance(tdiff_e, int):
-        tdiff_e = float(tdiff_e)
-    if not isinstance(tdiff_e, float) and tdiff_e is not None:
-        estr = '{:s}tdiff error values must be a float'.format(estr)
-        logging.error(estr)
-        return None
-
     #-------------------------------------------------------------------------
     # Loading the beams into the output list, updating the distance,
     # groundscatter flag, virtual height, and propogation path
@@ -1355,9 +1359,27 @@ def update_bs_w_scan(scan, hard, min_pnts=3,
         elif beams[bnum-1] is None:
             bnum -= 1
         else:
+            # Update the beam parameters
+            if tdiff is None:
+                beams[bnum-1].prm.tdiff = None
+            else:
+                args = [beams[bnum-1].stid, beams[bnum-1].time,
+                        beams[bnum-1].prm.tfreq]
+                args.extend(tdiff_args)
+                beams[bnum-1].prm.tdiff = tdiff(*args)
+
+            if tdiff_e is None:
+                beams[bnum-1].prm.tdiff_e = None
+            else:
+                args = [beams[bnum-1].stid, beams[bnum-1].time,
+                        beams[bnum-1].prm.tfreq]
+                args.extend(tdiff_e_args)
+                beams[bnum-1].prm.tdiff_e = tdiff_e(*args)
+
+            # Update the beam fit values
             (beams[bnum-1], e, eerr, vh, verr, hh, rr,
-             nhard) = update_beam_fit(beams[bnum-1], hard=hard, tdiff=tdiff,
-                                      tdiff_e=tdiff_e, region_hmax=region_hmax,
+             nhard) = update_beam_fit(beams[bnum-1], hard=hard,
+                                      region_hmax=region_hmax,
                                       region_hmin=region_hmin, max_hop=max_hop,
                                       ptest=ptest, strict_gs=strict_gs,
                                       logfile=logfile, log_level=log_level)
@@ -1929,7 +1951,7 @@ def update_bs_w_scan(scan, hard, min_pnts=3,
     return beams
 
 #-------------------------------------------------------------------------
-def update_beam_fit(beam, hard=None, tdiff=None, tdiff_e=None,
+def update_beam_fit(beam, hard=None,
                     region_hmax={"D":115.0,"E":150.0,"F":900.0},
                     region_hmin={"D":75.0,"E":115.0,"F":150.0}, max_hop=3.0,
                     ptest=True, strict_gs=False, logfile=None,
@@ -1945,11 +1967,6 @@ def update_beam_fit(beam, hard=None, tdiff=None, tdiff_e=None,
     hard : (class `pydarn.radar.radStruct.site` or NoneType)
        Hardware information for this radar.  Will load if not supplied.
        (default=None)
-    tdiff : (float or NoneType)
-        tdiff values (in microsec) or None (to use the hardware value)
-        (default=None)
-    tdiff_e : (float or NoneType)
-        tdiff error (in microsec) or None. (default=None)
     region_hmax : (dict)
         Maximum virtual heights allowed in each ionospheric layer.
         (default={"D":115.0,"E":150.0,"F":400.0})
@@ -1977,8 +1994,8 @@ def update_beam_fit(beam, hard=None, tdiff=None, tdiff_e=None,
         or adjusted attributes:
         beam.fit.gflg : updated : Flag indicating backscatter type
                                   (1=ground, 0=ionospheric, -1=indeterminate)
-        beam.prm.tdiff : added : tdiff used in elevation (microsec)
-        beam.prm.tdiff_e : possibly added : tdiff error (microsec)
+        beam.prm.tdiff : possibly updated : tdiff used in elevation (microsec)
+        beam.prm.tdiff_e : possibly updated : tdiff error (microsec)
     elvs : (dict)
         Elevation angles for the front "front" and rear "back" FoV
     elv_errs : (dict)
@@ -2040,20 +2057,6 @@ def update_beam_fit(beam, hard=None, tdiff=None, tdiff_e=None,
         max_hop = float(max_hop)
     if not isinstance(max_hop, float) or max_hop < 0.5:
         estr = '{:s}maximum hop must be a float greater than 0.5'.format(estr)
-        logging.error(estr)
-        return beam, None, None, None, None, None, None, None
-
-    if isinstance(tdiff, int):
-        tdiff = float(tdiff)
-    if not isinstance(tdiff, float) and tdiff is not None:
-        estr = '{:s}tdiff must be a float or NoneType'.format(estr)
-        logging.error(estr)
-        return beam, None, None, None, None, None, None, None
-
-    if isinstance(tdiff_e, int):
-        tdiff_e = float(tdiff_e)
-    if not isinstance(tdiff_e, float) and tdiff_e is not None:
-        estr = '{:s}tdiff error must be a float or NoneType'.format(estr)
         logging.error(estr)
         return beam, None, None, None, None, None, None, None
 
@@ -2132,13 +2135,11 @@ def update_beam_fit(beam, hard=None, tdiff=None, tdiff_e=None,
 
     # Calculate the elevation angles for the front and rear FoV, after
     # initializing the beam parameters with the supplied tdiff
-    if not hasattr(beam.prm, "tdiff"):
-        if tdiff is not None:
-            beam.prm.tdiff = tdiff
-        else:
-            beam.prm.tdiff = hard.tdiff
-    elif beam.prm.tdiff is None:
+    if not hasattr(beam.prm, "tdiff") or beam.prm.tdiff is None:
         beam.prm.tdiff = hard.tdiff
+
+    if not hasattr(beam.prm, "tdiff_e") or beam.prm.tdiff_e is None:
+        beam.prm.tdiff_e = np.nan
 
     for ff in ["front", "back"]:
         # Calculate the elevation
@@ -2259,9 +2260,9 @@ def update_backscatter(rad_bms, min_pnts=3,
                        region_hmin={"D":75.0,"E":115.0,"F":150.0},
                        rg_box=[2,5,10,20], vh_box=[50.0,50.0,50.0,150.0],
                        max_rg=[5,25,40,76], max_hop=3.0,
-                       ut_box=dt.timedelta(minutes=20.0), tdiff=list(),
-                       tdiff_e=list(), tdiff_time=list(), ptest=True,
-                       strict_gs=False, logfile=None,
+                       ut_box=dt.timedelta(minutes=20.0), tdiff=None,
+                       tdiff_args=list(), tdiff_e=None, tdiff_e_args=list(),
+                       ptest=True, strict_gs=False, logfile=None,
                        log_level=logging.WARNING, step=6):
     '''
     Updates the propagation path, elevation, backscatter type, and origin
@@ -2296,14 +2297,27 @@ def update_backscatter(rad_bms, min_pnts=3,
     ut_box : (class `dt.timedelta`)
         Total width of universal time box to examine for backscatter FoV
         continuity. (default=20.0 minutes)
-    tdiff : (list)
-        A list of tdiff values (in microsec) or an empty list (to use the
-        hardware value) (default=list())
-    tdiff_e : (list)
-        A list containing the tdiff error (in microsec) or an empty list
-        (no elevation/virtual height error will be computed). (default=list())
-    tdiff_time : (list)
-        A list containing the starting time (datetimes) for each tdiff.
+    tdiff : (function or NoneType)
+        A function to retrieve tdiff values (in microsec) using the radar ID
+        number current datetime, and transmisson frequency as input.
+        Additional inputs may be specified using tdiff_args.  Example:
+        def get_tdiff(stid, time, tfreq, filename) { do things } return tdiff
+        tdiff=get_tdiff, tdiff_args=["tdiff_file"]
+        (default=None)
+    tdiff_args : (list)
+        A list specifying any arguements other than radar, time, and
+        transmission frequency to run the specified tdiff function.
+        (default=list())
+    tdiff_e : function or NoneType)
+        A function to retrieve tdiff error values (in microsec) using the radar
+        ID number, current datetime, and transmisson frequency as input.
+        Additional inputs may be specified using tdiff_e_args.  Example:
+        def get_tdiffe(stud, time, tfreq, filename) { do things } return tdiffe
+        tdiff_e=get_tdiffe, tdiff_e_args=["tdiff_file"]
+        (default=None)
+    tdiff_e_args : (list)
+        A list specifying any arguements other than radar, time, and
+        transmission frequency to run the specified tdiff_e function.
         (default=list())
     ptest : (boolian)
         Test to see if a propagation path is realistic (default=True)
@@ -2406,29 +2420,10 @@ def update_backscatter(rad_bms, min_pnts=3,
         '{:s}hop limits are unrealistic [{:}]'.format(estr, max_hop)
     assert isinstance(ut_box, dt.timedelta) and ut_box.total_seconds() > 0.0, \
         '{:s}UT box must be a positive datetime.timdelta object'.format(estr)
-    assert(isinstance(tdiff, list) or isinstance(tdiff, np.ndarray)), \
-        '{:s}tdiff must be a list [{:}]'.format(estr, tdiff)
-    assert isinstance(tdiff_e, list) or isinstance(tdiff_e, np.ndarray), \
-        '{:s}tdiff error values must be in a list [{:}]'.format(estr, tdiff_e)
-    assert((isinstance(tdiff_time, list) or isinstance(tdiff_time, np.ndarray))
-           and len(tdiff_time) == len(tdiff)), \
-        '{:s}tdiff times must be in a list [{:}]'.format(estr, tdiff_time)
     if isinstance(step, float):
         step = int(step)
     assert isinstance(step, int), '{:s}step flag must be an int'.format(estr)
 
-    #-----------------------------------------------------------------------
-    # Define local routines
-    def get_tdiff(td, bm_time):
-        ig = 0
-        while ig < len(tdiff_time) and bm_time < tdiff_time[ig]:
-            ig += 1
-
-        if ig >= len(tdiff_time):
-            return None
-
-        return td[ig]
-    # End local routine
     #-----------------------------------------------------------------------
     # Cycle through all the beams
     snum = 0
@@ -2488,11 +2483,11 @@ def update_backscatter(rad_bms, min_pnts=3,
                                          region_hmin=region_hmin,
                                          rg_box=rg_box, vh_box=vh_box,
                                          rg_max=max_rg, max_hop=max_hop,
-                                         tdiff=get_tdiff(tdiff,st),
-                                         tdiff_e=get_tdiff(tdiff_e,st),
-                                         ptest=ptest, strict_gs=strict_gs,
-                                         logfile=logfile,  log_level=log_level,
-                                         step=step)
+                                         tdiff=tdiff, tdiff_args=tdiff_args,
+                                         tdiff_e=tdiff_e,
+                                         tdiff_e_args=tdiff_e_args, ptest=ptest,
+                                         strict_gs=strict_gs, logfile=logfile,
+                                         log_level=log_level, step=step)
 
                     if b is not None:
                         beams.extend(list(b))

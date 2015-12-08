@@ -707,7 +707,7 @@ def plot_storm_figures(intensity_all="v", intensity_sep="v", marker_key="reg",
                        mtimes=[dt.datetime(1997,10,10,16),
                                dt.datetime(1997,10,10,17,30),
                                dt.datetime(1997,10,10,18,30),
-                               dt.datetime(1997,10,10,19,30)],
+                               dt.datetime(1997,10,10,19,30)], coords="mlt",
                        imin={"v":-500.0}, imax={"v":500.0}, zinc={"v":5.0},
                        rad="pyk", bmnum=0, cp=None, figname_time=None,
                        figname_maps=None, password=True, file_type="fitacf",
@@ -751,6 +751,8 @@ def plot_storm_figures(intensity_all="v", intensity_sep="v", marker_key="reg",
         Times to plot maps, unless no times are provided.
         (default=[dt.datetime(1997,10,10,16), dt.datetime(1997,10,10,17,30),
                   dt.datetime(1997,10,10,18,30), dt.datetime(1997,10,10,19,30)])
+    coords : (str)
+        Type of map to plot ("geo" or "mlt") (default="mlt")
     imin : (dict)
         Dictionary of intensity minimums (default={"v":-500.0})
     imax : (dict)
@@ -838,6 +840,8 @@ def plot_storm_figures(intensity_all="v", intensity_sep="v", marker_key="reg",
         beams with the data used to create the plots
     '''
     import davitpy.pydarn.radar as pyrad
+    import davitpy.utils as dutils
+
     rn = "plot_storm_figure"
 
     # Load and process the desired data
@@ -897,42 +901,182 @@ def plot_storm_figures(intensity_all="v", intensity_sep="v", marker_key="reg",
                 a.plot([mt, mt], [-1, 76], "k--")
 
         # Initialize the map figure
-        fmap = plt.figure(figsize=(12, 3 * mlen))
-        nrows = int(np.ceil(0.5*mlen))
-        axmap = [fmap.add_subplot(2, nrows, ia+1) for ia in range(mlen)]
-        hard = None
-        fovs = {1:None, -1:None}
-        mm = None
-        for ia,mt in enumerate(sorted(mtimes)):
-            scan = list()
-            for k in beams[rad].keys():
-                j = 0
-                while j < len(beams[rad][k]):
-                    if beams[rad][k][j].scan_time > mt:
-                        break
-                    elif beams[rad][k][j].scan_time == mt:
-                        scan.append(beams[rad][k][j])
-                    j += 1
+        if coords.lower() == "geo":
+            fmap = plt.figure(figsize=(12, 3 * mlen))
+            nrows = int(np.ceil(0.5*mlen))
+            axmap = [fmap.add_subplot(2, nrows, ia+1) for ia in range(mlen)]
+            hard = None
+            fovs = {1:None, -1:None}
+            mm = None
+            for ia,mt in enumerate(sorted(mtimes)):
+                scan = list()
+                for k in beams[rad].keys():
+                    j = 0
+                    while j < len(beams[rad][k]):
+                        if beams[rad][k][j].scan_time > mt:
+                            break
+                        elif beams[rad][k][j].scan_time == mt:
+                            scan.append(beams[rad][k][j])
+                        j += 1
 
-            llab = True if ia % 2 == 0 else False
-            axmap[ia].set_axis_bgcolor(acolor)
-            mm, fovs, hard, con = plot_map(axmap[ia], scan, hard=hard,
-                                           map_handle=mm, fovs=fovs,
-                                           plot_beams={1:[bmnum],-1:[bmnum]},
-                                           color_beams={1:["0.6"],-1:["0.6"]},
-                                           maxgates=45, dat_attr=intensity_all,
-                                           fov_attr="fovflg",
-                                           dmax=imax[intensity_all],
-                                           dmin=imin[intensity_all],
-                                           dcolor=color[intensity_all],
-                                           lat_label=llab, draw=False)
+                llab = True if ia % 2 == 0 else False
+                axmap[ia].set_axis_bgcolor(acolor)
+                mm, fovs, hard, con = plot_map(axmap[ia], scan, hard=hard,
+                                               map_handle=mm, fovs=fovs,
+                                               plot_beams={1:[bmnum],
+                                                           -1:[bmnum]},
+                                               color_beams={1:["0.6"],
+                                                            -1:["0.6"]},
+                                               maxgates=45,
+                                               dat_attr=intensity_all,
+                                               fov_attr="fovflg",
+                                               dmax=imax[intensity_all],
+                                               dmin=imin[intensity_all],
+                                               dcolor=color[intensity_all],
+                                               lat_label=llab, draw=False)
 
-        label = pyrad.radUtils.getParamDict(intensity_all)['label']
-        unit = pyrad.radUtils.getParamDict(intensity_all)['unit']
-        cbmap = add_colorbar(fmap, con, imin[intensity_all],
-                             imax[intensity_all], zinc[intensity_all],
-                             label, unit, loc=[0.91,.1,.01,.8])
-        plt.subplots_adjust(wspace=.05)
+            label = pyrad.radUtils.getParamDict(intensity_all)['label']
+            unit = pyrad.radUtils.getParamDict(intensity_all)['unit']
+            cbmap = add_colorbar(fmap, con, imin[intensity_all],
+                                 imax[intensity_all], zinc[intensity_all],
+                                 label, unit, loc=[0.91,.1,.01,.8])
+            plt.subplots_adjust(wspace=.05)
+        elif coords.lower() == "mlt":
+            fov_dir = {1:"front", -1:"back"}
+
+            # Determine the largest and smallest MLTs
+            mlts = np.ndarray(shape=mlen, dtype=float) * np.nan
+            quarters = np.zeros(shape=mlen, dtype=int)
+            hard = list()
+            for ia,mt in enumerate(mtimes):
+                hard.append(pyrad.site(code=rad, dt=mt))
+                mlon = dutils.coordUtils.coord_conv(hard[ia].geolon,
+                                                    hard[ia].geolat, "geo",
+                                                    "mlt", 300.0, mt)[0]
+                
+                mlts[ia] = mlon * 24.0 / 360.0
+                if mlts[ia] < 0.0:
+                    mlts[ia] = mlts[ia] + 24.0
+                if mlts[ia] >= 24.0:
+                    mlts[ia] = mlts[ia] - 24.0
+
+                # Assign MLT clock corners
+                if mlts[ia] < 12.0 and mlts[ia] >= 6.0:
+                    quarters[ia] = 1
+                elif mlts[ia] < 6.0:
+                    quarters[ia] = 2
+                elif mlts[ia] >= 18.0:
+                    quarters[ia] = 3
+                else:
+                    quarters[ia] = 4
+
+            quarters = list(set(quarters))
+            qlen = len(quarters)
+            qmin = min(quarters)
+            qmax = max(quarters)
+            fwidth = 12 if qlen>2 or (qlen>1 and qmin<3 and qmax>2) else 6
+            fheight = 6
+            if(qlen > 2 or (qlen > 1 and (qmin > 1 and qmin < 4 and qmax == 4)
+                            or (qmin == 1 and qmax < 4))):
+               fheight *= 2
+            proj = "npstere" if hard[0].geolat > 0.0 else "spstere"
+            boundinglat = (np.sign(hard[0].geolat) *
+                           (np.floor(abs(hard[0].geolat) / 10.0 - 1.0) * 10.0))
+            boundinglat = 56.0
+            mwidth = 111.0e3 * boundinglat * fwidth / 6.0
+            mheight = 111.0e3 * boundinglat * fheight / 6.0
+            lat_0 = np.sign(hard[0].geolat) * 90.0
+            lon_0 = 0.0
+
+            fmap = plt.figure(figsize=(12,12))
+            axmap = fmap.add_subplot(1,1,1)
+            axmap.set_axis_bgcolor(acolor)
+
+            # Cycle through times
+            for ia,mt in enumerate(sorted(mtimes)):
+                # Load data
+                scan = list()
+                for k in beams[rad].keys():
+                    j = 0
+                    while j < len(beams[rad][k]):
+                        if beams[rad][k][j].scan_time > mt:
+                            break
+                        elif beams[rad][k][j].scan_time == mt:
+                            scan.append(beams[rad][k][j])
+                        j += 1
+
+                # Initialize map, hardware data, and fovs
+                fovs = {ff:pyrad.radFov.fov(site=hard[ia],
+                                            rsep=scan[0].prm.rsep,
+                                            nbeams=hard[ia].maxbeam, ngates=45,
+                                            bmsep=hard[ia].bmsep, model="IS",
+                                            coords=coords, date_time=mt,
+                                            fov_dir=fov_dir[ff])
+                        for ff in [1,-1]}
+                mm = dutils.plotUtils.mapObj(ax=axmap, datetime=mt,
+                                             coords=coords, projection=proj,
+                                             resolution="c", lon_0=0, lat_0=90,
+                                             boundinglat=boundinglat,
+                                             draw_map=False, grid=True,
+                                             gridLabels=False, round=True)
+
+                mm, fovs, hh, con = plot_map(axmap, scan, hard=hard[ia],
+                                             map_handle=mm, fovs=fovs,
+                                             plot_beams={1:[bmnum],-1:[bmnum]},
+                                             color_beams={1:["0.6"],-1:["0.6"]},
+                                             maxgates=45,
+                                             dat_attr=intensity_all,
+                                             fov_attr="fovflg",
+                                             dmax=imax[intensity_all],
+                                             dmin=imin[intensity_all],
+                                             dcolor=color[intensity_all],
+                                             draw_map=False, plot_name=False,
+                                             draw=False)
+                axmap.set_title("")
+
+            # Add clock hours
+            (xmin, xmax) = axmap.get_xlim()
+            (ymin, ymax) = axmap.get_ylim()
+            axmap.text(xmax*0.47, ymax*1.01, "12:00", fontsize="medium")
+            axmap.text(xmax*0.47, -ymax*0.02, "00:00", fontsize="medium")
+            axmap.text(-xmax*0.07, ymax*0.495, "18:00", fontsize="medium")
+            axmap.text(xmax*1.01, ymax*0.495, "06:00", fontsize="medium")
+            axmap.text(xmax*0.86, ymax*0.12, "03:00", fontsize="medium")
+            axmap.text(xmax*0.09, ymax*0.12, "21:00", fontsize="medium")
+            axmap.text(xmax*0.09, ymax*0.87, "15:00", fontsize="medium")
+            axmap.text(xmax*0.86, ymax*0.86, "09:00", fontsize="medium")
+            fmap.suptitle("{:s} Magnetic Local Time".format(rad.upper()))
+
+            # Fix axis and figure limits
+            if fwidth < 12:
+                if qmin > 2:
+                    axmap.set_xlim(xmin, xmax * 0.51)
+                else:
+                    axmap.set_xlim(xmax * 0.49, xmax)
+            if fheight < 12:
+                if qmax < 4 and qmin > 1:
+                    axmap.set_ylim(ymin, ymax * 0.51)
+                else:
+                    axmap.set_ylim(ymax * 0.49, ymax)
+
+            if fwidth < 12 or fheight < 12:
+                fmap.set_size_inches(fwidth, fheight)
+
+            label = pyrad.radUtils.getParamDict(intensity_all)['label']
+            unit = pyrad.radUtils.getParamDict(intensity_all)['unit']
+            cbmap = add_colorbar(fmap, con, imin[intensity_all],
+                                 imax[intensity_all], zinc[intensity_all],
+                                 label, unit, orient="horizontal",
+                                 loc=[0.1,.05,.8,.01])
+
+            
+        else:
+            estr = "{:s} WARNING: unknown coordinate ".format(rn)
+            estr = "{:s}format [{:}]".format(estr, coords)
+            logging.warning(estr)
+            fmap = None
+            axmap = None
+            cbmap = None
     else:
         fmap = None
         axmap = None
@@ -1385,7 +1529,8 @@ def plot_scan_and_beam(scan, beam, fattr="felv", rattr="belv", fhop_attr="fhop",
                        binc=ticker.MultipleLocator(3),
                        tinc=mdates.MinuteLocator(interval=15),
                        yinc=ticker.MultipleLocator(15), zinc=6, plot_title="",
-                       label_type="frac", make_plot=True, draw=True):
+                       label_type="frac", acolor="w", make_plot=True,
+                       draw=True):
     '''Plot a specified attribute (elevation angle or virtual height) for the
     front and rear field-of-view, using a scan of beams and a single beam for
     a longer period of time.
@@ -1447,6 +1592,8 @@ def plot_scan_and_beam(scan, beam, fattr="felv", rattr="belv", fhop_attr="fhop",
         Plot title (default="")
     label_type : (str)
         Type of hop label to use (frac/decimal) (default="frac")
+    acolor : (str or tuple)
+        Background color for subplots (default="0.9" - light grey)
     make_plot : (boolian)
         Make plot (True) or just process data (False) (default=True)
     draw : (boolian)
@@ -1601,6 +1748,12 @@ def plot_scan_and_beam(scan, beam, fattr="felv", rattr="belv", fhop_attr="fhop",
     rbax = plt.subplot(gb[:,1])
     ftax = plt.subplot(gt[0,:])
     rtax = plt.subplot(gt[1,:])
+
+    # Set the plot background color
+    fbax.set_axis_bgcolor(acolor)
+    rbax.set_axis_bgcolor(acolor)
+    ftax.set_axis_bgcolor(acolor)
+    rtax.set_axis_bgcolor(acolor)
 
     if zmin is None:
         zmin = min(np.nanmin(ftime), np.nanmin(rtime), np.nanmin(fbeam),
@@ -2189,7 +2342,7 @@ def plot_map(ax, scan, hard=None, map_handle=None, fovs={1:None,-1:None},
              maxgates=None, fan_model='IS', model_alt=300.0, elv_attr="fovelv",
              alt_attr="vheight", dat_attr="v", fov_attr="fovflg", dmax=500.0,
              dmin=-500.0, dcolor=ccenter, lat_label=True, lon_label=True,
-             gscatter=True, draw=True):
+             gscatter=True, draw_map=True, plot_name=True, draw=True):
     '''Plot a fov map
 
     Parameters
@@ -2320,7 +2473,7 @@ def plot_map(ax, scan, hard=None, map_handle=None, fovs={1:None,-1:None},
             fovs[ff] = pyrad.radFov.fov(site=hard, rsep=scan[0].prm.rsep,
                                         nbeams=hard.maxbeam, ngates=maxgates,
                                         bmsep=hard.bmsep, elevation=fan_elv,
-                                        altitude=fan_alt, model = fan_model,
+                                        altitude=fan_alt, model=fan_model,
                                         coords="geo", date_time=scan[0].time,
                                         fov_dir=fov_dir[ff])
 
@@ -2338,12 +2491,14 @@ def plot_map(ax, scan, hard=None, map_handle=None, fovs={1:None,-1:None},
                                      urcrnrlat=urlat, resolution="l")
 
     map_handle.ax = ax
-    map_handle.drawcoastlines(linewidth=0.5, color="0.6")
-    map_handle.fillcontinents(color="0.6", alpha=.1)
-    map_handle.drawmeridians(np.arange(-180.0, 180.0, 15.0),
-                             labels=[0,0,0,lon_label])
-    map_handle.drawparallels(np.arange(lllat, urlat+1.0, 10.0),
-                             labels=[lat_label,0,0,0])
+
+    if draw_map:
+        map_handle.drawcoastlines(linewidth=0.5, color="0.6")
+        map_handle.fillcontinents(color="0.6", alpha=.1)
+        map_handle.drawmeridians(np.arange(-180.0, 180.0, 15.0),
+                                 labels=[0,0,0,lon_label])
+        map_handle.drawparallels(np.arange(lllat, urlat+1.0, 10.0),
+                                 labels=[lat_label,0,0,0])
 
     # Add the field-of-view boundaries
     for ff in fovs.keys():
@@ -2356,7 +2511,7 @@ def plot_map(ax, scan, hard=None, map_handle=None, fovs={1:None,-1:None},
     # Add the radar location and name
     norm = mcolors.Normalize(vmin=dmin, vmax=dmax)
     plotting.mapOverlay.overlayRadar(map_handle, ids=scan[0].stid,
-                                     dateTime=scan[0].time, annotate=True,
+                                     dateTime=scan[0].time, annotate=plot_name,
                                      fontSize=16)
 
     # Add the data to each field-of-view

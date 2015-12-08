@@ -59,7 +59,7 @@ class mapObj(basemap.Basemap):
 
     def __init__(self, ax=None, datetime=None, coords='geo', projection='stere',
                  resolution='c', dateTime=None, lat_0=None, lon_0=None,
-                 boundinglat=None, width=None, height=None, draw=True, 
+                 boundinglat=None, width=None, height=None, draw_map=True, 
                  fillContinents='.8', fillOceans='None', fillLakes=None,
                  fill_alpha=.5, coastLineWidth=0., coastLineColor=None,
                  grid=True, gridLabels=True, showCoords=True, **kwargs):
@@ -89,7 +89,7 @@ class mapObj(basemap.Basemap):
             * **[boundinglat]**: bounding latitude (default is +/-20)
             * **[width]**: width in m from the (lat_0, lon_0) center
             * **[height]**: height in m from the (lat_0, lon_0) center
-            * **[draw]**: set to "False" to skip initial drawing of map
+            * **[draw_map]**: set to "False" to skip initial drawing of map
             * **[fillContinents]**: continent color. Default=0.8 is 'grey'
             * **[fillOceans]**: ocean color. Default='None' provides no filling
             * **[fillLakes]**: lake color. Default='None' provides no filling
@@ -127,6 +127,7 @@ class mapObj(basemap.Basemap):
         self._fillOceans=fillOceans
         self._fillLakes=fillLakes
         self._showCoords=showCoords
+        self._draw_map=draw_map
         self._grid=grid
         self._gridLabels=gridLabels
         self._coordsDict, self._coords_string = get_coord_dict()
@@ -156,12 +157,14 @@ class mapObj(basemap.Basemap):
         self.coords = coords
 
         # Set map projection limits and center point depending on hemisphere selection
+
         if self.lat_0 is None: 
           self.lat_0 = 90.
           if boundinglat: self.lat_0 = math.copysign(self.lat_0, boundinglat)
         if self.lon_0 is None: 
           self.lon_0, _ = coord_conv(-100., 0., "geo", self.coords,
                                      altitude=0., date_time=self.datetime)
+
         if boundinglat:
           width = height = 2*111e3*( abs(self.lat_0 - boundinglat) )
 
@@ -169,26 +172,31 @@ class mapObj(basemap.Basemap):
         super(mapObj, self).__init__(projection=projection,
                                      resolution=resolution, lat_0=self.lat_0,
                                      lon_0=self.lon_0, width=width,
-                                     height=height, **kwargs)
+                                     height=height, boundinglat=boundinglat,
+                                     **kwargs)
 
         if ax is not None:
             mapObj.ax = ax
 
-        if draw:
+        if draw_map or grid:
           self.draw()
 
     def draw(self):
         import numpy as np
         from pylab import text
-        # Add continents
-        _ = self.drawcoastlines(linewidth=self._coastLineWidth, color=self._coastLineColor)
-        _ = self.drawmapboundary(fill_color=self._fillOceans)
-        _ = self.fillcontinents(color=self._fillContinents, lake_color=self._fillLakes)
+        if self._draw_map:
+            # Add continents
+            _ = self.drawcoastlines(linewidth=self._coastLineWidth,
+                                    color=self._coastLineColor)
+            _ = self.drawmapboundary(fill_color=self._fillOceans)
+            _ = self.fillcontinents(color=self._fillContinents,
+                                    lake_color=self._fillLakes)
     
         # Add coordinate spec
         if self._showCoords:
-          _ = text(self.urcrnrx, self.urcrnry, self._coordsDict[self.coords]+' coordinates', 
-            rotation=-90., va='top', fontsize=8)
+          _ = text(self.urcrnrx, self.urcrnry,
+                   self._coordsDict[self.coords]+' coordinates', 
+                   rotation=-90., va='top', fontsize=8)
     
         # draw parallels and meridians.
         if self._grid:

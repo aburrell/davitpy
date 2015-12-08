@@ -22,6 +22,7 @@ class MapConv(object):
         * **[hemi]** : hemisphere - 'north' or 'south'
         * **[maxVelScale]** : maximum velocity to be used for plotting, min is zero so scale is [0,1000]
         * **[plotCoords]** (str): coordinates of the plot, only use either 'mag' or 'mlt'
+        * **[password]** (bool): password needed to retrieve SFTP data
     **Example**:
         ::
 
@@ -48,9 +49,8 @@ class MapConv(object):
     """
     import matplotlib.cm as cm
 
-    def __init__(self, startTime, mObj, 
-        axisHandle, hemi = 'north', 
-        maxVelScale = 1000., plotCoords = 'mag'):
+    def __init__(self, startTime, mObj, axisHandle, hemi='north', 
+                 maxVelScale=1000., plotCoords='mag', password=None):
         import datetime
         from davitpy.pydarn.sdio import sdDataOpen
         import matplotlib.cm as cm
@@ -67,24 +67,31 @@ class MapConv(object):
 
         #check if the mapObj is indicating the same hemisphere as data requested
         if hemi == "north" :
-            assert( mObj.boundarylats[0] > 0. ),"Map object is using one hemisphere and data the other"
+            assert( mObj.boundarylats[0] > 0. ), \
+                "Map object is using one hemisphere and data the other"
         else :
-            assert( mObj.boundarylats[0] < 0. ),"Map object is using one hemisphere and data the other"
+            assert( mObj.boundarylats[0] < 0. ), \
+                "Map object is using one hemisphere and data the other"
 
         # check if hemi and coords keywords are correct
-        assert(hemi == "north" or hemi == "south"),"error, hemi should either be 'north' or 'south'"
-        assert(plotCoords == 'mag' or coords == 'mlt'),"error, coords must be one of 'mag' or 'mlt'"
+        assert(hemi == "north" or hemi == "south"), \
+            "error, hemi should either be 'north' or 'south'"
+        assert(plotCoords == 'mag' or coords == 'mlt'), \
+            "error, coords must be one of 'mag' or 'mlt'"
 
         self.hemi = hemi
         self.plotCoords = plotCoords
 
         # Read the corresponding data record from both map and grid files. 
-        # This is the way I'm setting stuff up to avoid confusion of reading and plotting seperately.
-        # Just give the date/hemi and the code reads the corresponding rec
+        # This is the way I'm setting stuff up to avoid confusion of reading
+        # and plotting seperately.  Just give the date/hemi and the code reads
+        # the corresponding rec
         endTime = startTime + datetime.timedelta(minutes=2)
-        grdPtr = sdDataOpen(startTime, hemi, eTime=endTime, fileType='grdex')
+        grdPtr = sdDataOpen(startTime, hemi, eTime=endTime, fileType='grdex',
+                            password=password)
         self.grdData = grdPtr.readRec()
-        mapPtr = sdDataOpen(startTime, hemi, eTime=endTime, fileType='mapex')
+        mapPtr = sdDataOpen(startTime, hemi, eTime=endTime, fileType='mapex',
+                            password=password)
         self.mapData = mapPtr.readRec()
 
     def overlayGridVel(self, pltColBar=True, 
