@@ -8,19 +8,11 @@
 **Module**: pydarn.radar.radInfoIo
 *********************
 Input/Output for radar information (location, boresight, interferometer
-<<<<<<< HEAD
-position...) is read from a local dblite database (radar.db). The functions in
-this module provide tools to populate/update said database (from hdw.dat and
-radar.dat files), or simply read hdw.dat and radar.dat files. It also provide a
-function to manually update the local radar.db database using the remote db
-database (requires an active internet connection).
-=======
 position...) is read from a local dblite database (radar.db). The functions
 in this module provide tools to populate/update said database (from hdw.dat
 and radar.dat files), or simply read hdw.dat and radar.dat files. It also
 provide a function to manually update the local radar.db database using the
 remote db database (requires an active internet connection).
->>>>>>> origin/develop
 
 **Classes**:
         * :class:`pydarn.radar.radInfoIo.updateRadars`
@@ -32,20 +24,6 @@ remote db database (requires an active internet connection).
 
 # *************************************************************
 def radarRead(path=None):
-<<<<<<< HEAD
-    """Reads radar.dat file	
-    **Args**: 
-        * [**path**] (str): path to radar.dat file; defaults to RST environment
-        variable SD_RADAR
-    **Returns**:
-        * A dictionary with keys matching the radar.dat variables each
-        containing values of length #radars.
-
-    **Example**:
-        ::
-        radars = pydarn.radar.radarRead()
-			
-=======
     """Reads radar.dat file
 
     **Args***
@@ -60,18 +38,13 @@ def radarRead(path=None):
 
             radars = pydarn.radar.radarRead()
 
->>>>>>> origin/develop
     Written by Sebastien, 2012-09
     """
     import shlex
     import os
     from datetime import datetime
     from davitpy.utils import parseDate
-<<<<<<< HEAD
-	
-=======
 
->>>>>>> origin/develop
     # Read file
     if path:
         pathOpen = os.path.join(path, 'radar.dat')
@@ -85,7 +58,6 @@ def radarRead(path=None):
     except:
         print('radarRead: cannot read {}'.format(pathOpen))
         print('')
-<<<<<<< HEAD
         txt = 'You may be getting this error because your computer cannot '
         txt = '{:s}contact an appropriate internet server to get '.format(txt)
         txt = '{:s}the latest radar.dat information.  You can can '.format(txt)
@@ -118,48 +90,6 @@ def radarRead(path=None):
         if len(ldat) == 0:
             continue
 
-=======
-        txt = 'You may be getting this error because your computer ' \
-              'cannot contact an appropriate internet server to get ' \
-              'the latest radar.dat information.  You can can use a ' \
-              'local file instead by setting the SD_RADAR environment ' \
-              'variable to the location of a local copy of radar.dat.'
-        print(txt)
-        print('')
-        txt = 'Example, you might add a similar line to your .bashrc:'
-        print(txt)
-        txt = 'export SD_RADAR=/home/username/tables/radar.dat'
-        print(txt)
-        print('')
-        txt = 'Also, make sure your SD_HDWPATH also points to the location ' \
-              'of your hdw.dat files.'
-        print(txt)
-        txt = 'You can get the latest hdw.dat files from ' \
-              'https://github.com/vtsuperdarn/hdw.dat'
-        print(txt)
-        txt = 'Example, you might add a similar line to your .bashrc:'
-        print(txt)
-        txt = 'export SD_HDWPATH=/home/username/tables/hdw.dat/'
-        print(txt)
-        print('')
-        return None
-
-    # Initialize placeholder dictionary of lists
-    radarF = {}
-    radarF['id'] = []
-    radarF['status'] = []
-    radarF['stTime'] = []
-    radarF['edTime'] = []
-    radarF['name'] = []
-    radarF['operator'] = []
-    radarF['hdwfname'] = []
-    radarF['code'] = []
-    radarF['cnum'] = []
-    # Fill dictionary with each radar.dat lines
-    for ldat in data:
-        ldat = shlex.split(ldat)
-        if len(ldat) == 0: continue
->>>>>>> origin/develop
         radarF['id'].append(int(ldat[0]))
         radarF['status'].append(int(ldat[1]))
         tmpDate = parseDate(int(ldat[2]))
@@ -172,11 +102,7 @@ def radarRead(path=None):
         radarF['code'].append(ldat[7:])
         radarF['cnum'].append(len(ldat[7:]))
 
-<<<<<<< HEAD
-    # Return			
-=======
     # Return
->>>>>>> origin/develop
     return radarF
 
 
@@ -184,7 +110,6 @@ def radarRead(path=None):
 def hdwRead(fname, path=None):
     """Reads hdw.dat files for given radar specified by its hdw.dat file name
 
-<<<<<<< HEAD
     **Args**: 
         * **fname** (str): hdw.dat file name
         * [**path**] (str): path to hdw.dat file; defaults to RST environment
@@ -193,24 +118,11 @@ def hdwRead(fname, path=None):
     **Returns**:
         * A dictionary with keys matching the hdw.dat variables each containing
         values of length #site updates.
-=======
-    **Args**:
-        * **fname** (str): hdw.dat file name
-        * [**path**] (str): path to hdw.dat file; defaults to RST environment
-                     variable SD_HDWPATH
-    **Returns**:
-        * A dictionary with keys matching the hdw.dat variables each
-          containing values of length #site updates.
->>>>>>> origin/develop
 
     **Example**:
         ::
 
-<<<<<<< HEAD
         hdw = pydarn.radar.hdwRead('hdw.dat.bks')
-=======
-            hdw = pydarn.radar.hdwRead('hdw.dat.bks')
->>>>>>> origin/develop
 
     Written by Sebastien, 2012-09
     """
@@ -219,11 +131,7 @@ def hdwRead(fname, path=None):
     import shlex
     from datetime import datetime
     from davitpy.utils import timeYrsecToDate
-<<<<<<< HEAD
-	
-=======
 
->>>>>>> origin/develop
     # Read hardware file FNAME
     # Read file
     if path:
@@ -237,7 +145,6 @@ def hdwRead(fname, path=None):
         data = file_hdw.readlines()
         file_hdw.close()
     except:
-<<<<<<< HEAD
         print 'hdwRead: cannot read {}\n'.format(pathOpen)
 
         txt = 'You may be getting this error because your computer cannot '
@@ -288,89 +195,18 @@ def hdwRead(fname, path=None):
             siteF['maxatten'].append(int(ldat[16]))
             siteF['maxgate'].append(int(ldat[17]))
             siteF['maxbeam'].append(int(ldat[18]))
-		
-=======
-        print('hdwRead: cannot read {}'.format(pathOpen))
-        print('')
-        txt = 'You may be getting this error because your computer cannot ' \
-              'contact an appropriate internet server to get the latest ' \
-              'hdw.dat information.  You can can use a local file instead ' \
-              'by setting the SD_HDWPATH environment variable to the ' \
-              'location of the local hdw.dat path.'
-        print(txt)
-        txt = 'You can get the latest hdw.dat files from ' \
-              'https://github.com/vtsuperdarn/hdw.dat'
-        print(txt)
-        print('')
-        txt = 'Example, you might add a similar line to your .bashrc:'
-        print(txt)
-        txt = 'export SD_HDWPATH=/home/username/tables/hdw.dat/'
-        print(txt)
-        print('')
-        return
 
-    # Site placeholder
-    siteF = {}
-    siteF['tval'] = []
-    siteF['geolat'] = []
-    siteF['geolon'] = []
-    siteF['alt'] = []
-    siteF['boresite'] = []
-    siteF['bmsep'] = []
-    siteF['vdir'] = []
-    siteF['atten'] = []
-    siteF['tdiff'] = []
-    siteF['phidiff'] = []
-    siteF['interfer'] = []
-    siteF['recrise'] = []
-    siteF['maxatten'] = []
-    siteF['maxgate'] = []
-    siteF['maxbeam'] = []
-    # Read line by line, ignoring comments
-    for ldat in data:
-        ldat = shlex.split(ldat)
-        if len(ldat) == 0: continue
-        if ldat[0] == '#': continue
-        if int(ldat[1]) == 2999:
-            siteF['tval'].append(-1)
-        else:
-            siteF['tval'].append(timeYrsecToDate(int(ldat[2]), int(ldat[1])))
-        siteF['geolat'].append(float(ldat[3]))
-        siteF['geolon'].append(float(ldat[4]))
-        siteF['alt'].append(float(ldat[5]))
-        siteF['boresite'].append(float(ldat[6]))
-        siteF['bmsep'].append(float(ldat[7]))
-        siteF['vdir'].append(float(ldat[8]))
-        siteF['atten'].append(float(ldat[9]))
-        siteF['tdiff'].append(float(ldat[10]))
-        siteF['phidiff'].append(float(ldat[11]))
-        siteF['interfer'].append([float(ldat[12]), float(ldat[13]),
-                                 float(ldat[14])])
-        siteF['recrise'].append(float(ldat[15]))
-        siteF['maxatten'].append(int(ldat[16]))
-        siteF['maxgate'].append(int(ldat[17]))
-        siteF['maxbeam'].append(int(ldat[18]))
-
->>>>>>> origin/develop
     # Return
     return siteF
 
 
 # *************************************************************
 class updateRadars(object):
-<<<<<<< HEAD
     """update local radar.sqlite from remote db database, or from local files
     if the database cannot be reached. 
     Currently, the remote database is housed on the VT servers.
     
     **Members**: 
-=======
-    """Update local radar.sqlite from remote db database, or from local files
-       if the database cannot be reached.  Currently, the remote database is
-       housed on the VT servers.
-
-    **Members**:
->>>>>>> origin/develop
         * **sql_path** (str): path to sqlite file
         * **sql_file** (str): sqlite file name
     **Methods**:
@@ -408,7 +244,6 @@ class updateRadars(object):
         dtfmt = '%Y-%m-%d %H:%M:%S'
         dttest = datetime.utcnow().strftime(dtfmt)
         # File path
-<<<<<<< HEAD
         try: 
             self.sql_path=davitpy.rcParams['DAVIT_TMPDIR']
         except:
@@ -416,18 +251,11 @@ class updateRadars(object):
                 self.sql_path=os.environ['HOME']
             except:
                 self.sql_path = os.path.dirname(os.path.abspath(__file__))
-=======
-        try:
-            self.sql_path = davitpy.rcParams['DAVIT_TMPDIR']
-        except:
-            try:  self.sql_path = os.environ['HOME']
-            except: self.sql_path = os.path.dirname(os.path.abspath(__file__))
->>>>>>> origin/develop
+
         self.sql_file = '.radars.sqlite'
         # MongoDB server
         self.db_name = 'radarInfo'
         try:
-<<<<<<< HEAD
             self.db_user = davitpy.rcParams['SDBREADUSER']
         except KeyError:
             self.db_user = "" 
@@ -451,49 +279,6 @@ class updateRadars(object):
                           "maxatten REAL", "maxgate INT", "maxbeam INT",
                           "interfer BLOB"]
         self.dtype_inf = ["var TEXT", "description TEXT"]
-=======
-            self.db_user = davitpy.rcParams['DBREADUSER']
-        except KeyError:
-            self.db_user = ""
-        try:
-            self.db_pswd = davitpy.rcParams['DBREADPASS']
-        except KeyError:
-            self.db_pswd = ""
-        try:
-            self.db_host = davitpy.rcParams['SDDB']
-        except KeyError:
-            self.db_host = ""
-
-        # Declare custom data types
-        self.dtype_rad = ["id INT",
-                          "cnum INT",
-                          "code BLOB",
-                          "name TEXT",
-                          "operator TEXT",
-                          "hdwfname TEXT",
-                          "status INT",
-                          "stTime TIMESTAMP",
-                          "edTime TIMESTAMP",
-                          "snum INT"]
-        self.dtype_hdw = ["id INT",
-                          "tval TIMESTAMP",
-                          "geolat REAL",
-                          "geolon REAL",
-                          "alt REAL",
-                          "boresite REAL",
-                          "bmsep REAL",
-                          "vdir INT",
-                          "tdiff REAL",
-                          "phidiff REAL",
-                          "recrise REAL",
-                          "atten REAL",
-                          "maxatten REAL",
-                          "maxgate INT",
-                          "maxbeam INT",
-                          "interfer BLOB"]
-        self.dtype_inf = ["var TEXT",
-                          "description TEXT"]
->>>>>>> origin/develop
 
         isUp = self.sqlUpdate()
 
@@ -512,17 +297,10 @@ class updateRadars(object):
         """
         from pymongo import MongoClient
         import sys
-<<<<<<< HEAD
-        #print self.db_user,self.db_pswd,self.db_host, self.db_name
-        uri='mongodb://{0}:{1}@{2}/{3}'.format(self.db_user, self.db_pswd,
-                                               self.db_host, self.db_name)
         #print uri
-=======
-
         uri = 'mongodb://{0}:{1}@{2}/{3}'.format(self.db_user, self.db_pswd,
                                                  self.db_host, self.db_name)
 
->>>>>>> origin/develop
         try:
             conn = MongoClient(uri)
             dba = conn[self.db_name]
@@ -534,12 +312,7 @@ class updateRadars(object):
             try:
                 colSel = lambda colName: dba[colName].find()
 
-<<<<<<< HEAD
                 self.db_select = {'rad': colSel("radars"), 'hdw': colSel("hdw"),
-=======
-                self.db_select = {'rad': colSel("radars"),
-                                  'hdw': colSel("hdw"),
->>>>>>> origin/develop
                                   'inf': colSel("metadata")}
                 return True
             except:
@@ -559,21 +332,12 @@ class updateRadars(object):
 
         **Belongs to**: :class:`updateRadars`
 
-<<<<<<< HEAD
         **Args**: 
-=======
-        **Args**:
->>>>>>> origin/develop
             * **None**
 
         **Returns**:
-<<<<<<< HEAD
             * **isConnected** (bool): True if sqlite file already exists or
-            was sussessfully created
-=======
-            * **isConnected** (bool): True if sqlite file already exists or was
-                              successfully created
->>>>>>> origin/develop
+            was successfully created
         """
         import sqlite3 as lite
         import os
@@ -591,11 +355,7 @@ class updateRadars(object):
 
         **Belongs to**: :class:`updateRadars`
 
-<<<<<<< HEAD
-        **Args**: 
-=======
         **Args**:
->>>>>>> origin/develop
             * **None**
         **Returns**:
             * **isConnected** (bool): True if sqlite file update
@@ -633,21 +393,12 @@ class updateRadars(object):
             cur.execute("CREATE TABLE hdw (%s)" % ', '.join(self.dtype_hdw))
             cur.execute("CREATE TABLE inf (%s)" % ', '.join(self.dtype_inf))
 
-<<<<<<< HEAD
             cur.executemany("INSERT INTO rad VALUES(%s)" % ', '.join(['?'] * \
                                 len(self.dtype_rad)), arr_rad)
             cur.executemany("INSERT INTO hdw VALUES(%s)" % ', '.join(['?'] * \
                                 len(self.dtype_hdw)), arr_hdw)
             cur.executemany("INSERT INTO inf VALUES(%s)" % ', '.join(['?'] * \
                                 len(self.dtype_inf)), arr_inf)
-=======
-            cur.executemany("INSERT INTO rad VALUES(%s)" % ', '.join(['?'] *
-                            len(self.dtype_rad)), arr_rad)
-            cur.executemany("INSERT INTO hdw VALUES(%s)" % ', '.join(['?'] *
-                            len(self.dtype_hdw)), arr_hdw)
-            cur.executemany("INSERT INTO inf VALUES(%s)" % ', '.join(['?'] *
-                            len(self.dtype_inf)), arr_inf)
->>>>>>> origin/develop
 
         return True
 
@@ -660,11 +411,8 @@ class updateRadars(object):
         **Args**:
             * **sel** (pymongo Ptr)
             * [**dtype**] (str): a list of 'name TYPE' pairsto be inserted into
-<<<<<<< HEAD
             sqlite DB
-=======
-                          sqlite DB
->>>>>>> origin/develop
+
         **Returns**:
             * **arr** a list of lists of DB entries
         """
@@ -685,12 +433,8 @@ class updateRadars(object):
         return arr
 
     def __readFromFiles(self):
-<<<<<<< HEAD
         """Read hdw.dat and radar.dat into a slect-like dictionnary from local
         files
-=======
-        """Read hdw.dat and radar.dat into a select-like dictionary from local files
->>>>>>> origin/develop
         """
         from datetime import datetime
 
@@ -702,7 +446,6 @@ class updateRadars(object):
 
         nradar = len(radarF['id'])
         for irad in xrange(nradar):
-<<<<<<< HEAD
             radars.append({"id": radarF['id'][irad], 
                             "cnum": radarF['cnum'][irad], 
                             "code": radarF['code'][irad], 
@@ -728,30 +471,7 @@ class updateRadars(object):
                 hdw.append({"id": radarF['id'][irad], "tval": tval,
                             "geolat": siteF['geolat'][isit],
                             "geolon": siteF['geolon'][isit],
-                            "alt": siteF['alt'][isit], 
-=======
-            radars.append({"id": radarF['id'][irad],
-                           "cnum": radarF['cnum'][irad],
-                           "code": radarF['code'][irad],
-                           "name": radarF['name'][irad],
-                           "operator": radarF['operator'][irad],
-                           "hdwfname": radarF['hdwfname'][irad],
-                           "status": radarF['status'][irad],
-                           "stTime": radarF['stTime'][irad],
-                           "edTime": radarF['edTime'][irad],
-                           "snum": 0})
-            siteF = hdwRead(radarF['hdwfname'][irad])
-            if not siteF: continue
-            tsnum = 0
-            for isit in xrange(len(siteF['tval'])):
-                if siteF['tval'][isit] == 0: continue
-                tval = datetime(3000, 1, 1) if siteF['tval'][isit] == -1 else siteF['tval'][isit]
-                hdw.append({"id": radarF['id'][irad],
-                            "tval": tval,
-                            "geolat": siteF['geolat'][isit],
-                            "geolon": siteF['geolon'][isit],
                             "alt": siteF['alt'][isit],
->>>>>>> origin/develop
                             "boresite": siteF['boresite'][isit],
                             "bmsep": siteF['bmsep'][isit],
                             "vdir": siteF['vdir'][isit],
@@ -763,19 +483,11 @@ class updateRadars(object):
                             "maxgate": siteF['maxgate'][isit],
                             "maxbeam": siteF['maxbeam'][isit],
                             "interfer": siteF['interfer'][isit]})
-<<<<<<< HEAD
+
                 tsnum += 1     
             radars[-1]["snum"] = tsnum 
 
         self.db_select = {'rad':radars, 'hdw':hdw,
                           'inf':[{"var":'', "description": ''}]}
-        
-=======
-                tsnum += 1
-            radars[-1]["snum"] = tsnum
 
-        self.db_select = {'rad': radars, 'hdw': hdw,
-                          'inf': [{"var": '', "description": ''}]}
-
->>>>>>> origin/develop
         return True
