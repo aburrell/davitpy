@@ -101,7 +101,7 @@ data_files.append(('davitpy/models/raydarn',
 # Now execute the setup
 #############################################################################
 setup(name='davitpy',
-      version = "0.2",
+      version = "0.4",
       description = "Space Science Toolkit",
       author = "VT SuperDARN Lab and friends",
       author_email = "ajribeiro86@gmail.com",
