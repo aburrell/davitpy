@@ -12,9 +12,9 @@ verbosity : helpful
 ####
 # ADDRESS SFTP DATABASE, USERNAME, PASSWORD, AND PORT
 ####
-DB		: sd-data.ece.vt.edu
-DBREADUSER	: sd_dbread
-DBREADPASS	: 5d
+DB		: ion.le.ac.uk
+DBREADUSER	: ab763
+DBREADPASS	: True
 DB_PORT		: 22
 
 ####
@@ -29,7 +29,7 @@ DBWRITEPASS	:
 ####
 # TEMPORARY DIRECTORY
 ####
-DAVIT_TMPDIR		: /tmp/sd/
+DAVIT_TMPDIR		: /Users/ab763/Programs/Data/SuperDARN/Downloads/
 
 ####
 # RADAR DATA FILE FETCHING
@@ -56,10 +56,10 @@ DAVIT_TMPDIR		: /tmp/sd/
 # DAVIT_REMOTE_FNAMEFMT='{date}.{hour}......{radar}.{ftype},{date}.{hour}......{radar}.{channel}.{ftype}'
 # becomes remote_fnamefmt = ['{date}.{hour}......{radar}.{ftype}','{date}.{hour}......{radar}.{channel}.{ftype}'] in python.
 ####
-DAVIT_REMOTE_DIRFORMAT	: data/{year}/{ftype}/{radar}/
+DAVIT_REMOTE_DIRFORMAT	: /{ftype}/{radar}/{year}/
 DAVIT_REMOTE_FNAMEFMT	: {date}.{hour}......{radar}.{ftype},{date}.{hour}......{radar}.{channel}.{ftype}
-DAVIT_LOCAL_DIRFORMAT	: /sd-data/{year}/{ftype}/{radar}/
-DAVIT_LOCAL_FNAMEFMT	: {date}.{hour}......{radar}.{ftype},{date}.{hour}......{radar}.{channel}.{ftype}
+DAVIT_LOCAL_DIRFORMAT	: /Users/ab763/Programs/Data/SuperDARN/{ftype}/{radar}/{year}/
+DAVIT_LOCAL_FNAMEFMT	: {date}.*.{radar}.{ftype}.*
 
 ####
 # MAP DATA FILE FETCHING
@@ -77,5 +77,5 @@ DAVIT_SD_LOCAL_FNAMEFMT		: {date}.{hemi}.{ftype}
 # DaViTpy after the line below this block is uncommented, ie)
 # 'davitpy install directory'/tables/aacgm/aacgm_coeffs/
 ####
-# AACGM_DAVITPY_DAT_PREFIX	: /davitpy_dir_path/tables/aacgm/aacgm_coeffs/
+ AACGM_DAVITPY_DAT_PREFIX	: /Users/ab763/Programs/Git/davitpy/tables/aacgm/aacgm_coeffs/
 
