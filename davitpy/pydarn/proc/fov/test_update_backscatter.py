@@ -180,7 +180,8 @@ def get_sorted_legend_labels(ax, marker_key="reg"):
     try:
         lind = {morder[marker_key][ll]:il for il,ll in enumerate(labels)}
     except:
-        lind = {morder[marker_key][float(ll)]:il for il,ll in enumerate(labels)}
+        labels = [float(ll) for ll in labels]
+        lind = {morder[marker_key][ll]:il for il,ll in enumerate(labels)}
     order = [lind[k] for k in sorted(lind.keys())]
 
     return [handles[i] for i in order], [labels[i] for i in order]
@@ -1219,6 +1220,12 @@ def plot_single_column(f, xdata, ydata, zdata, zindices, zname, color,
     """
     import davitpy.pydarn.radar as pyrad
 
+    # Ensure the z limits have been set
+    if zmin is None:
+        zmin = {ff:zdata[ff].min() for ff in zdata.keys()}
+    if zmax is None:
+        zmax = {ff:zdata[ff].max() for ff in zdata.keys()}
+
     # Initialize the subplots
     xpos = {8:1.1, 7:1.1, 6:1.0, 5:0.9, 4:0.8, 3:0.7, 2:0.5, 1:0.0}
     iax = {ff:i for i,ff in enumerate(["all",1,-1,0])}
@@ -1294,8 +1301,25 @@ def plot_single_column(f, xdata, ydata, zdata, zindices, zname, color,
                         handles.insert(jl, hl[il])
 
         # Format the axes; add titles, colorbars, and labels
+        if xmin is None:
+            try:
+                xmin = xdata.min()
+            except: pass
+        if xmax is None:
+            try:
+                xmax = xdata.max()
+            except: pass
         if xmin is not None and xmax is not None:
             ax[ff].set_xlim(xmin, xmax)
+
+        if ymin is None:
+            try:
+                ymin = ydata.min()
+            except: pass
+        if ymax is None:
+            try:
+                ymax = ydata.max()
+            except: pass
         if ymin is not None and ymax is not None:
             ax[ff].set_ylim(ymin, ymax)
 
