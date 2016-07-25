@@ -162,10 +162,10 @@ def vheight_distribution(tdiff, ref_height, radius, asep, phi_sign, ecor, phi0,
     try:
         elv = celv.calc_elv_list(phi0, phi0e, fovflg, cos_phi, tfreq, asep,
                                  ecor, phi_sign, tdiff) # in radians
-        heights = [np.nan if np.isnan(dd) or np.isnan(elv[di]) else
-                   np.sqrt(dd**2 + radius**2 + 2.0 * dd * radius *
+        heights = [np.sqrt(dd**2 + radius**2 + 2.0 * dd * radius *
                            np.sin(elv[di])) - radius
-                   for di,dd in enumerate(dist)] # in km
+                   for di,dd in enumerate(dist)
+                   if not np.isnan(dd) and not np.isnan(elv[di])] # in km
 
         #--------------------------------------------------------------------
         # When the distribution is approximately gaussian, the error depends
@@ -174,7 +174,9 @@ def vheight_distribution(tdiff, ref_height, radius, asep, phi_sign, ecor, phi0,
         # who each flank the desired location
         #
         # Sum the errors
-        ff = np.sqrt((np.mean(heights) - ref_height)**2 + np.std(heights)**2)
+        ff = np.nan if len(heights) == 0 else np.sqrt((np.mean(heights) -
+                                                       ref_height)**2
+                                                      + np.std(heights)**2)
     except:
         ff = np.nan
 
