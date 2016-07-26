@@ -129,9 +129,9 @@ class radFreqBands(object):
         Radar numerical ID
     tbands : (list)
         Transmision frequency band numbers
-    tfreq_mins : (list)
+    tmins : (list)
         List of transmission frequency band lower boundaries (kHz)
-    tfreq_maxs : (list)
+    tmaxs : (list)
         List of transmission frequency band upper boundaries (kHz)
 
     Methods
@@ -161,12 +161,66 @@ class radFreqBands(object):
         # Assign the frequency bands
         try:
             self.tbands = rad_band_num[self.rad_code]
-            self.tfreq_mins = rad_min[self.rad_code]
-            self.tfreq_maxs = rad_max[self.rad_code]
+            self.tmins = rad_min[self.rad_code]
+            self.tmaxs = rad_max[self.rad_code]
         except:
             self.tbands = list()
-            self.tfreq_mins = list()
-            self.tfreq_maxs = list()
+            self.tmins = list()
+            self.tmaxs = list()
+
+    def __str__(self):
+        '''Object string representation
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        --------
+        ostr : (str)
+            Formatted output denoting the radar, the number of frequency bands,
+            and the frequency bands in MHz
+
+        Example
+        --------
+        In[1]: fb = davitpy.pydarn.radar.tdiff.rad_freqbands.radFreqBands(10)
+        In[2]: print fb
+        Radar transmission frequency bands:
+            Code: han       ID: 10
+            Number of frequency bands spanning 8.305-19.990 MHz: 15
+                Band Min_Freq-Max_Freq (MHz)
+                00 8.305-8.335
+                01 8.965-9.040
+                02 9.900-9.985
+                03 11.075-11.275
+                04 11.550-11.600
+                05 12.370-12.415
+                06 13.200-13.260
+                07 15.010-15.080
+                08 16.210-16.360
+                09 16.555-16.615
+                10 17.970-18.050
+                11 18.850-18.865
+                12 19.415-19.680
+                13 19.705-19.755
+                14 19.800-19.990
+        '''
+        ostr = "Radar transmission frequency bands:\n"
+        # Add radar name
+        ostr = "{:s}\tCode: {:s}\tID: {:d}\n".format(ostr, self.rad_code,
+                                                     self.stid)
+        # Add number of frequency bands
+        ostr = "{:s}\tNumber of frequency bands spanning ".format(ostr)
+        ostr = "{:s}{:.3f}-{:.3f} ".format(ostr, min(self.tmins) * 1.0e-3,
+                                           1.0e-3 * max(self.tmaxs))
+        ostr = "{:s}MHz: {:d}\n".format(ostr, len(self.tbands))
+        # Add the frequency bands
+        ostr = "{:s}\t\tBand Min_Freq-Max_Freq (MHz)\n".format(ostr)
+        for i,mm in enumerate(self.tmins):
+            ostr = "{:s}\t\t{:02d} {:.3f}-{:.3f}\n".format(ostr, self.tbands[i],
+                                                           mm * 1.0e-3, 1.0e-3 *
+                                                           self.tmaxs[i])
+        return ostr
 
     #--------------------------------------------------------------------------
     def get_tband_max_min(self, tfreq):
@@ -187,9 +241,9 @@ class radFreqBands(object):
         '''
         #------------------------------------------------
         # Cycle through the transmission frequency bands
-        for i,t in enumerate(self.tfreq_mins):
-            if tfreq - t >= 0 and self.tfreq_maxs[i] - tfreq >= 0:
-                return(t, self.tfreq_max[i])
+        for i,t in enumerate(self.tmins):
+            if tfreq - t >= 0 and self.tmaxs[i] - tfreq >= 0:
+                return(t, self.tmaxs[i])
         
         logging.warn("Unknown transmission freq [{:d} kHz]".format(tfreq))
         return(-1, -1)
@@ -212,8 +266,8 @@ class radFreqBands(object):
             
         #--------------------------------------------
         # Ensure that band information is available
-        if len(self.tfreq_mins) > tband:
-            mean_freq = int((self.tfreq_maxs[tband] + self.tfreq_mins[tband])
+        if len(self.tmins) > tband:
+            mean_freq = int((self.tmaxs[tband] + self.tmins[tband])
                             / 2.0)
         else:
             estr = "unknown transmission freq band [{:}]".format(tband)
@@ -237,9 +291,9 @@ class radFreqBands(object):
         '''
         #--------------------------------------------
         # Cycle through the different frequency bands
-        for i,t in enumerate(self.tfreq_mins):
-            if t <= tfreq and tfreq <= self.tfreq_maxs[i]:
+        for i,t in enumerate(self.tmins):
+            if t <= tfreq and tfreq <= self.tmaxs[i]:
                 return(self.tbands[i])
         
-        logging.warn("no band for frequency [{:} kHz]".format(tfreq)
-        return -1
+        logging.warn("no band for frequency [{:} kHz]".format(tfreq))
+        return(-1)
