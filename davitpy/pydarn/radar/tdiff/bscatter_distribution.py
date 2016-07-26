@@ -22,10 +22,7 @@ References
 A.G. Burrell et al. (2016) submitted to Radio Science doi:xxx
 ------------------------------------------------------------------------------
 """
-
 import numpy as np
-import davitpy.utils.geoPack as geo
-import davitpy.pydarn.proc.fov.calc_elevation as celv
 
 #---------------------------------------------------------------------------
 def lat_distribution(tdiff, ref_lat, hard, asep, phi_sign, ecor, phi0, phi0e,
@@ -71,6 +68,8 @@ def lat_distribution(tdiff, ref_lat, hard, asep, phi_sign, ecor, phi0, phi0e,
     -------
     Calculates equation 3 in Burrell et al. (2016)
     '''
+    import davitpy.utils.geoPack as geo
+    import davitpy.pydarn.proc.fov.calc_elevation as celv
     # Ensure that TDIFF is a single number and not a list or array element
     try:
         len(tdiff)
@@ -148,6 +147,8 @@ def vheight_distribution(tdiff, ref_height, radius, asep, phi_sign, ecor, phi0,
     -------
     Calculates equation 3 in Burrell et al. (2016)
     '''
+    import davitpy.pydarn.proc.fov.calc_elevation as celv
+    
     # Ensure that TDIFF is a single number and not a list or array element
     try:
         len(tdiff)
