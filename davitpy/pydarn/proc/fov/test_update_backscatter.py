@@ -142,7 +142,7 @@ def add_colorbar(figure_handle, contour_handle, zmin, zmax, zinc=6, name=None,
 
     # Change the z scale, if necessary
     if(scale is "exponential"):
-        cb.formatter=ticker.FormatStrFormatter('%7.2E')
+        cb.formatter = ticker.FormatStrFormatter('%7.2E')
 
     # Set the label and update the ticks
     if name is not None:
@@ -377,6 +377,8 @@ def plot_yeoman_plate1(intensity_all="p_l", intensity_sep="fovelv",
 
     rad = rad_bms.keys()[0]
     if not dout[0].has_key(rad) or len(dout[0][rad]) == 0:
+        estr = "can't find radar [" + rad + "] in data:" + dout[0].keys()
+        logging.error(estr)
         return(dout[0], dout[1], dout[2], beams)
 
     # Recast the data as numpy arrays
@@ -675,6 +677,8 @@ def plot_milan_figure9(intensity_all="p_l", intensity_sep="p_l",
                            beams=beams)
 
     if not dout[0].has_key(rad) or len(dout[0][rad]) == 0:
+        estr = "can't find radar [" + rad + "] in data:" + dout[0].keys()
+        logging.error(estr)
         return(dout[0], dout[1], dout[2], beams)
 
     # Recast the data as numpy arrays
@@ -896,6 +900,8 @@ def plot_storm_figures(intensity_all="v", intensity_sep="v", marker_key="reg",
                            beams=beams)
 
     if not dout[0].has_key(rad) or len(dout[0][rad]) == 0:
+        estr = "can't find radar [" + rad + "] in data:" + dout[0].keys()
+        logging.error(estr)
         return(dout[0], dout[1], dout[2], beams)
 
     # Recast the data as numpy arrays
@@ -2135,8 +2141,21 @@ def plot_meteor_figure(fcolor="b", rcolor="m", stime=dt.datetime(2001,12,14),
     #-------------------------------------------------------------------------
     # Define local routines
     def ismeteor(p, verr, werr):
-        """
-        Gareth's threshold test for meteor scatter (Chisham and Freeman 2013)
+        """Gareth's threshold test for meteor scatter (Chisham and Freeman 2013)
+
+        Parameters
+        ----------
+        p : (float)
+            Power
+        verr : (float)
+            Doppler velocity error
+        werr : (float)
+            Spectral width error
+
+        Returns
+        --------
+        good : (bool)
+            True if fits characteristics for meteor, else false
         """
         # Initialize output
         good = False
@@ -2162,7 +2181,7 @@ def plot_meteor_figure(fcolor="b", rcolor="m", stime=dt.datetime(2001,12,14),
         return good
 
     def dec2001ap(bm_time):
-        """ Look up Ap using time.  Only available for December 2001.
+        """Look up Ap using time.  Only available for December 2001.
         Data from: ftp://ftp.ngdc.noaa.gov/STP/GEOMAGNETIC_DATA/INDICES/KP_AP/
 
         Parameters

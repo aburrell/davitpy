@@ -408,8 +408,7 @@ def get_beam(radar_beams, nbeams):
 
 #----------------------------------------------------------------------------
 def calc_distance(beam, rg_attr="slist", dist_units="km", hop=.5):
-    """
-    A routine to calculate distance in either meters or kilometers along the
+    """A routine to calculate distance in either meters or kilometers along the
     slant path from the radar to the first ionospheric reflection/refraction
     point using the range gate and a propagation path specified by the hop
     number.  Currently only simple propagation paths (same ionospheric region)
@@ -491,8 +490,7 @@ def calc_distance(beam, rg_attr="slist", dist_units="km", hop=.5):
 def select_beam_groundscatter(beam, dist, min_rg=10, max_rg=76, rg_box=5,
                               max_p=5.0, max_v=30.0, max_w=90.0, gs_tol=.5,
                               nmin=5):
-    """
-    A routine to select groundscatter data.  Currently uses a range gate
+    """A routine to select groundscatter data.  Currently uses a range gate
     limit where all data beyond the maximum range gate is rejected, all
     data with 0.5 hop distances closer than 160 km are rejected, and all points
     closer than the minimum range gate that have a power greater than the
@@ -584,8 +582,7 @@ def select_beam_groundscatter(beam, dist, min_rg=10, max_rg=76, rg_box=5,
     # Identify all instances that are flagged as ground scatter and have
     # appropriate power fits based on their location
     def isgroundscatter(rg, dist, p_l, p_s, sd_gflg):
-        """
-        A routine to apply the logic that states whether or not a point is
+        """A routine to apply the logic that states whether or not a point is
         groundscatter or not, rejecting groundscatter points that are
         ambiguous
 
@@ -650,8 +647,7 @@ def select_beam_groundscatter(beam, dist, min_rg=10, max_rg=76, rg_box=5,
 #----------------------------------------------------------------------
 def calc_frac_points(beam, dat_attr, dat_index, central_index, box,
                      dat_min=None, dat_max=None):
-    """
-    Calculate the fraction of points within a certain distance about a
+    """Calculate the fraction of points within a certain distance about a
     specified range gate are groundscatter.
 
     Parameters
@@ -749,12 +745,11 @@ def update_bs_w_scan(scan, hard, min_pnts=3,
                      tdiff_args=list(), tdiff_e=None, tdiff_e_args=list(),
                      ptest=True, strict_gs=False, bmaz_e=0.0, boresite_e=0.0,
                      ix_e=0.0, iy_e=0.0, iz_e=0.0, step=6):
-    """
-    Updates the propagation path, elevation, backscatter type, structure flag,
-    and origin field-of-view (FoV) for all backscatter observations in each
-    beam for a scan of data.  A full scan is not necessary, but if the number
-    of beams is less than the specified minimum, a less rigerous evaluation
-    method is used.
+    """Updates the propagation path, elevation, backscatter type, structure
+    flag, and origin field-of-view (FoV) for all backscatter observations in
+    each beam for a scan of data.  A full scan is not necessary, but if the
+    number of beams is less than the specified minimum, a less rigerous
+    evaluation method is used.
 
     Parameters
     -------------
@@ -1538,8 +1533,7 @@ def update_beam_fit(beam, hard=None,
                     region_hmin={"D":75.0,"E":115.0,"F":150.0}, max_hop=3.0,
                     ptest=True, strict_gs=False, bmaz_e=0.0, boresite_e=0.0,
                     ix_e=0.0, iy_e=0.0, iz_e=0.0):
-    """
-    Update the beam.fit and beam.prm class, updating and adding attributes
+    """Update the beam.fit and beam.prm class, updating and adding attributes
     needed for common data analysis.
 
     Currently the earth radius error and slant distance error have no update
@@ -1859,8 +1853,7 @@ def update_backscatter(rad_bms, min_pnts=3,
                        tdiff_args=list(), tdiff_e=None, tdiff_e_args=list(),
                        ptest=True, strict_gs=False, bmaz_e=0.0, boresite_e=0.0,
                        ix_e=0.0, iy_e=0.0, iz_e=0.0, step=6):
-    """
-    Updates the propagation path, elevation, backscatter type, and origin
+    """Updates the propagation path, elevation, backscatter type, and origin
     field-of-view (FoV) for all backscatter observations in each beam.  Scans
     of data are used to determine the origin field-of-view (FoV), but a full
     scan is not necessary, but if the number of beams is less than the specified
