@@ -98,7 +98,7 @@ def calc_tdiff(init_tdiff, ref_loc, ref_err, loc_args, loc_func, func_tol,
     return tdiff, terr, miter, res
 
 def select_bscatter(beams, ret_attrs, radcp, tband, bnum, min_power=0.0,
-                    min_rg=0, max_rg=75, fovflg=None, gflg=None, stimes=list()
+                    min_rg=0, max_rg=75, fovflg=None, gflg=None, stimes=list(),
                     etimes=list()):
     '''Sample selection routine for heater backscatter
 
@@ -178,7 +178,7 @@ def select_bscatter(beams, ret_attrs, radcp, tband, bnum, min_power=0.0,
            and hasattr(beam, "prm") and
            tband == rad_tfreq.get_tfreq_band_num(beam.prm.tfreq)):
             igood = [i for i,p in enumerate(beam.fit.p_l) if p >= min_power and
-                     min_rg >= beam.fit.slist[i] and max_rg <= beam.fit.slist[i]
+                     min_rg <= beam.fit.slist[i] and max_rg >= beam.fit.slist[i]
                      and good_fov(fovflg, beam.fit, i) and
                      (gflg is None or beam.fit.gflg[i] == gflg)
                      and good_time(stimes, etimes, beam.time)]
@@ -187,13 +187,23 @@ def select_bscatter(beams, ret_attrs, radcp, tband, bnum, min_power=0.0,
                 # Assign values for each requested data type, padding with
                 # NaN if the key or values aren't available
                 for rkey in ret_data.keys():
-                    if hasattr(beam.fit, rkey):
+                    if hasattr(beam, rkey):
+                        # Add beam attribute
+                        rdata = getattr(beam, rkey)
+                        ret_data[rkey].extend([rdata for i in igood])
+                    elif hasattr(beam.fit, rkey):
+                        # Add fit attribute
                         rdata = getattr(beam.fit, rkey)
                         if rdata is not None:
                             ret_data[rkey].extend([rdata[i] for i in igood])
                         else:
                             ret_data[rkey].extend([np.nan for i in igood])
+                    elif hasattr(beam.prm, rkey):
+                        # Add parameter attribute
+                        rdata = getattr(beam.prm, rkey)
+                        ret_data[rkey].extend([rdata for i in igood])
                     else:
+                        # Pad unavailable attribute
                         ret_data[rkey].extend([np.nan for i in igood])
 
     return ret_data

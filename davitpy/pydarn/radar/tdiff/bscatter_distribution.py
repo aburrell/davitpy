@@ -82,14 +82,13 @@ def lat_distribution(tdiff, ref_lat, hard, asep, phi_sign, ecor, phi0, phi0e,
 
     # Calculate the elevation and latitude
     try:
-        elv = celv.calc_elv_list(phi0, phi0e, fovflg, cos_phi, tfreq, asep,
-                                 ecor, phi_sign, tdiff) # in radians
-        lat = np.empty(shape=len(elv), dtype=float) * np.nan
-        for i,b in enumerate(bmnum):
-            loc = geo.calcDistPnt(hard.geolat, hard.geolon, hard.alt,
-                                  az=hard.beamToAzim(b), el=np.degrees(elv[i]),
-                                  dist=dist[i])
-            lat[i] = loc['distLat']
+        # elevation is in radians
+        elv = np.array(celv.calc_elv_list(phi0, phi0e, fovflg, cos_phi, tfreq,
+                                          asep, ecor, phi_sign, tdiff)) 
+        loc = geo.calcDistPnt(hard.geolat, hard.geolon, hard.alt,
+                              az=hard.beamToAzim(np.array(bmnum)),
+                              el=np.degrees(elv), dist=np.array(dist))
+        lat = loc['distLat'][~np.isnan(loc['distLat'])] # Remove nan
 
         #--------------------------------------------------------------------
         # When the distribution is approximately gaussian, the error depends
@@ -98,7 +97,8 @@ def lat_distribution(tdiff, ref_lat, hard, asep, phi_sign, ecor, phi0, phi0e,
         # who each flank the desired location
         #
         # Sum the errors
-        ff = np.sqrt((lat.mean() - ref_lat)**2 + lat.std()**2)
+        ff = np.nan if len(lat) == 0 else np.sqrt((lat.mean() - ref_lat)**2 +
+                                                  lat.std()**2)
     except:
         ff = np.nan
 
@@ -196,7 +196,7 @@ def distribution_min(tdiff, ref_loc, loc_args, loc_func, func_tol,
         initial tdiff in microseconds
     ref_loc : (float)
         reference location
-    loc_args : (set)
+    loc_args : (tuple)
         A set containing the values for each backscatter measurement needed to
         calculate the location of the scattering point.  For example, latitude
         requires:
@@ -228,8 +228,9 @@ def distribution_min(tdiff, ref_loc, loc_args, loc_func, func_tol,
     import davitpy.pydarn.radar.tdiff.simplex as simplex
 
     # Perform the minimization using the Nelder-Mead Simplex method
-    tdiff1, mi1, res1 = simplex.rigerous_simplex(tdiff, loc_args, loc_func,
-                                                 tol=tdiff_tol, maxiter=maxiter)
+    tdiff1, mi1, res1 = simplex.rigerous_simplex(tdiff, (ref_loc,) + loc_args,
+                                                 loc_func, tol=tdiff_tol,
+                                                 maxiter=maxiter)
 
     if np.isnan(tperiod) or np.isnan(tdiff1) or mi1 >= maxiter:
         # If the function is not cyclical, or a minima could not be found,
@@ -245,8 +246,8 @@ def distribution_min(tdiff, ref_loc, loc_args, loc_func, func_tol,
     tdiff2 = tdiff1
     while np.sign(new_sign) == tsign and mi2 < maxiter and not np.isnan(tdiff2):
         tdiff2, mi, res2 = simplex.rigerous_simplex(tdiff1+new_sign*tperiod,
-                                                    loc_args, loc_func,
-                                                    tol=tdiff_tol,
+                                                    (ref_loc,) + loc_args,
+                                                    loc_func, tol=tdiff_tol,
                                                     maxiter=maxiter)
         mi2 += mi
         if not np.isnan(tdiff2):
@@ -278,16 +279,16 @@ def distribution_min(tdiff, ref_loc, loc_args, loc_func, func_tol,
     # If the two minima bracket the initial guess, there may be another minima
     # that is closer to the initial guess
     if a < tdiff and tdiff < c:
-        fb = loc_func(tdiff, *loc_args)
+        fb = loc_func(tdiff, *((ref_loc,) + loc_args))
 
         # Move upper and lower limits to exclude the identified minima
         while fb >= fa and tdiff - a > tdiff_tol:
             a = tdiff - 0.5 * (tdiff - a)
-            fa = loc_func(a, *loc_args)
+            fa = loc_func(a, *((ref_loc,) + loc_args))
         
         while fb >= fc and c - tdiff > tdiff_tol:
             c = tdiff + 0.5 * (c - tdiff)
-            fc = loc_func(c, *loc_args)
+            fc = loc_func(c, *((ref_loc,) + loc_args))
 
         # But we won't bother messing about with minimization at this point.
         # Now that the problem is constrained, make a list with tdiff
@@ -301,11 +302,11 @@ def distribution_min(tdiff, ref_loc, loc_args, loc_func, func_tol,
         # Only continue if there was enough of a difference between the two
         # bracketing points to provide a range of points to calcuate a minima.
         if len(x) > 1:
-            y = [loc_func(xx, *loc_args) for xx in x]
+            y = [loc_func(xx, *((ref_loc,) + loc_args)) for xx in x]
             ymin = min(y)
             xx = y.index(ymin)
             # A minima between the two previously found was located.
-            if abs(res1['fun'] - ymin) <= ftol:
+            if abs(res1['fun'] - ymin) <= func_tol:
                 # This minima is equally significant.  Keep it if it is
                 # closer to the initial guess than the first minima
                 if abs(tdiff1 - tdiff) > abs(x[xx] - tdiff):
@@ -323,7 +324,7 @@ def distribution_min(tdiff, ref_loc, loc_args, loc_func, func_tol,
 
     # See if the remaining minima are equally significant.  If they are pick the
     # one closest to the original guess.  Otherwise choose the deepest minima
-    if abs(res1['fun'] - res2['fun']) <= ftol:
+    if abs(res1['fun'] - res2['fun']) <= func_tol:
         # Check to see if the difference between the distances between the
         # tdiff estimate and the initial guess are significant.  If they are not
         # then choose the tdiff with the lowest function value.  If they are
