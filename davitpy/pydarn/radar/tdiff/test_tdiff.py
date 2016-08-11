@@ -179,18 +179,8 @@ def test_calc_tdiff(file_type="fitacf", password=True, tdiff_plot=None):
     In[1]: import davitpy.radar.tdiff as dtdiff
     In[5]: tt, trange, ldist = dtdiff.test_tdiff.test_calc_tdiff()
     --- shows simplex output ---
-    In[6]: print tt[0]
+    In[6]: print tt
     0.15493524451202445
-    In[7]: print tt[-1]
-    final_simplex: (array([[ 0.15493524],
-       [ 0.15499577]]), array([ 0.69607672,  0.69607734]))
-           fun: 0.69607671732767618
-       message: 'Optimization terminated successfully.'
-          nfev: 16
-           nit: 8
-        status: 0
-       success: True
-             x: array([ 0.15493524])
     '''
     import datetime as dt
     import davitpy.pydarn.radar as pyrad
