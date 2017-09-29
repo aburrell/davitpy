@@ -153,11 +153,6 @@ def plotFan(sTime, rad, interval=60, fileType='fitex', param='velocity',
     import pickle
     from matplotlib.backends.backend_pdf import PdfPages
 
-    import davitpy.models.aacgm as aacgm
-    # Is this leftover from a debugging point?
-    # Not sure where os is needed here.
-    import os
-    import copy
     from davitpy.utils.coordUtils import coord_conv
 
     tt = dt.datetime.now()
@@ -342,11 +337,11 @@ def plotFan(sTime, rad, interval=60, fileType='fitex', param='velocity',
                              va='center')
             xctr = x[0] + .175 * (x[1] - x[0])
             if(w < 4):
-                myFig.scatter(xctr, y[1] * (.98 - w * .025), s=.1 * pts[w],
+                myFig.gca().scatter(xctr, y[1] * (.98 - w * .025), s=.1 * pts[w],
                               zorder=15, marker='o', linewidths=.5,
                               edgecolor='face', facecolor='k')
             elif(w == 4):
-                myFig.scatter(xctr, y[1] * (.98 - w * .025), s=.1 * 35.,
+                myFig.gca().scatter(xctr, y[1] * (.98 - w * .025), s=.1 * 35.,
                               zorder=15, marker='o', linewidths=.5,
                               edgecolor='k', facecolor='w')
             elif(w == 5):
