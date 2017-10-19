@@ -98,8 +98,8 @@ def calc_tdiff(init_tdiff, ref_loc, ref_err, loc_args, loc_func, func_tol,
     return tdiff, terr, miter, res
 
 def select_bscatter(beams, ret_attrs, radcp, tband, bnum, min_power=0.0,
-                    min_rg=0, max_rg=75, fovflg=None, gflg=None, stimes=list(),
-                    etimes=list()):
+                    min_rg=0, max_rg=75, fovflg=None, gflg=[-1,0,1],
+                    stimes=list(), etimes=list()):
     '''Sample selection routine for heater backscatter
 
     Parameters
@@ -123,8 +123,9 @@ def select_bscatter(beams, ret_attrs, radcp, tband, bnum, min_power=0.0,
         Maximum allowed range gate (default=75)
     fovflg : (int)
         Desired field-of-view or None to ignore (default=None)
-    gflg : (int)
-        Desired type of backscatter or None to ignore (default=None)
+    gflg : (list)
+        List of acceptable backscatter types.  Default includes all types:
+        -1=indeterminate, 0=ionospheric, 1=ground (default=[-1,0,1])
     stimes : (list)
         List of allowed starting time periods (default=[])
     etimes : (list)
@@ -180,8 +181,8 @@ def select_bscatter(beams, ret_attrs, radcp, tband, bnum, min_power=0.0,
             igood = [i for i,p in enumerate(beam.fit.p_l) if p >= min_power and
                      min_rg <= beam.fit.slist[i] and max_rg >= beam.fit.slist[i]
                      and good_fov(fovflg, beam.fit, i) and
-                     (gflg is None or beam.fit.gflg[i] == gflg)
-                     and good_time(stimes, etimes, beam.time)]
+                     beam.fit.gflg[i] in gflg and
+                     good_time(stimes, etimes, beam.time)]
 
             if len(igood) > 0:
                 # Assign values for each requested data type, padding with

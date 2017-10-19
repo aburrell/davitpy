@@ -25,9 +25,81 @@ A.G. Burrell et al. (2016) submitted to Radio Science doi:xxx
 import numpy as np
 
 #---------------------------------------------------------------------------
+def elv_distribution(tdiff, ref_elv, hard, phi0, phi0e, fovflg, bm_az, tfreq,
+                     dist):
+    """Returns the squared sum of the difference between the mean and the
+    specified elevation and the standard deviation of the backscatter elevation
+
+    Parameters
+    -----------
+    tdiff : (float)
+        tdiff in microseconds
+    ref_elv : (float)
+        reference elevation in degrees
+    hard : (class davitpy.pydarn.radar.radStruct.site)
+        radar hardware data
+    phi0 : (list)
+        phase lags in radians
+    phi0e : (list)
+        phase lag errors in radians
+    fovflg : (list)
+        field-of-view flags
+    bm_az : (list)
+        Azimuthal angle between the beam and the radar boresite at zero
+        elevation (radians)
+    tfreq : (list)
+        transmission frequencies in kHz
+    dist : (list)
+        slant distance from radar to ionospheric reflection point in km
+
+    Returns
+    ---------
+    ff : (float)
+        standard deviation of the elevation angle distribution
+
+    Notes
+    -------
+    Appropriate with ray tracing
+    """
+    import davitpy.utils.geoPack as geo
+    import davitpy.pydarn.proc.fov.calc_elevation as celv
+    import davitpy.pydarn.radar.radFov as rfov
+    # Ensure that TDIFF is a single number and not a list or array element
+    try:
+        len(tdiff)
+        tdiff = tdiff[0]
+    except:
+        pass
+
+    if not isinstance(tdiff, float):
+        tdiff = float(tdiff)
+
+    # Calculate the elevation and latitude
+    try:
+        # elevation is in radians
+        elv = np.array(celv.calc_elv_list(phi0, phi0e, fovflg, bm_az, tfreq,
+                                          hard.interfer, tdiff))
+        elv = np.degrees(elv[~np.isnan(elv)]) # Remove nan
+
+        #--------------------------------------------------------------------
+        # When the distribution is approximately gaussian, the error depends
+        # on the location of the peak and the amount of spread.  Testing the
+        # standard deviation prevents the formation of a bimodal distribution
+        # who each flank the desired location
+        #
+        # Sum the errors
+        ff = np.nan if len(elv) == 0 else np.sqrt((elv.mean() - ref_elv)**2 +
+                                                  elv.std()**2)
+    except:
+        ff = np.nan
+
+    # Return the square root of the summed squared errors
+    return ff
+
+#---------------------------------------------------------------------------
 def lat_distribution(tdiff, ref_lat, hard, phi0, phi0e, fovflg, bm_az, tfreq,
                     dist):
-    '''Returns the squared sum of the difference between the mean and the
+    """Returns the squared sum of the difference between the mean and the
     specified latitude and the standard deviation of the backscatter latitudes
 
     Parameters
@@ -60,7 +132,7 @@ def lat_distribution(tdiff, ref_lat, hard, phi0, phi0e, fovflg, bm_az, tfreq,
     Notes
     -------
     Calculates equation 3 in Burrell et al. (2016)
-    '''
+    """
     import davitpy.utils.geoPack as geo
     import davitpy.pydarn.proc.fov.calc_elevation as celv
     import davitpy.pydarn.radar.radFov as rfov
@@ -109,7 +181,7 @@ def lat_distribution(tdiff, ref_lat, hard, phi0, phi0e, fovflg, bm_az, tfreq,
 #---------------------------------------------------------------------------
 def vheight_distribution(tdiff, ref_height, radius, asep, phi_sign, ecor, phi0,
                          phi0e, fovflg, cos_phi, tfreq, dist):
-    '''Returns the squared sum of the difference between the mean and the
+    """Returns the squared sum of the difference between the mean and the
     specified height and the standard deviation of the backscatter heights
 
     Parameters
@@ -147,7 +219,7 @@ def vheight_distribution(tdiff, ref_height, radius, asep, phi_sign, ecor, phi0,
     Notes
     -------
     Calculates equation 3 in Burrell et al. (2016)
-    '''
+    """
     import davitpy.pydarn.proc.fov.calc_elevation as celv
     
     # Ensure that TDIFF is a single number and not a list or array element
@@ -189,7 +261,7 @@ def vheight_distribution(tdiff, ref_height, radius, asep, phi_sign, ecor, phi0,
 #---------------------------------------------------------------------------
 def distribution_min(tdiff, ref_loc, loc_args, loc_func, func_tol,
                      tdiff_tol=1.0e-4, tperiod=np.nan, maxiter=2000):
-    '''Finds the minimum of the locaiton distribution about an ideal location
+    """Finds the minimum of the locaiton distribution about an ideal location
 
     Parameters
     -----------
@@ -225,7 +297,7 @@ def distribution_min(tdiff, ref_loc, loc_args, loc_func, func_tol,
         Number of iterations needed to estimate tdiff
     res : (tuple)
         Results from the successful simplex minimization run
-    '''
+    """
     import davitpy.pydarn.radar.tdiff.simplex as simplex
 
     # Perform the minimization using the Nelder-Mead Simplex method

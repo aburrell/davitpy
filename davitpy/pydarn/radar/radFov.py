@@ -474,7 +474,7 @@ class fov(object):
 def calcFieldPnt(tr_glat, tr_glon, tr_alt, boresight, beam_off, slant_range,
                  adjusted_sr=True, elevation=None, altitude=None, hop=None,
                  model=None, coords='geo', gs_loc="G", max_vh=400.0,
-                 fov_dir='front'):
+                 fov_dir='front', eval_loc=False):
     """Calculate coordinates of field point given the radar coordinates and
     boresight, the pointing direction deviation from boresight and elevation
     angle, and the field point slant range and altitude. Either the elevation
@@ -522,8 +522,12 @@ def calcFieldPnt(tr_glat, tr_glon, tr_alt, boresight, beam_off, slant_range,
         location 'I' for groundscatter (default='G')
     max_vh : (float)
         Maximum height for longer slant ranges in Standard model (default=400)
-    fov_dir
+    fov_dir : (str)
         'front' (default) or 'back'.  Specifies fov direction
+    eval_loc : (bool)
+        Evaluate the calculated location based on resonable tolerances (True) or
+        accept first calculation (False).  Using True gives better locations,
+        but restricts data at the furthest range gates. (default=False)
 
     Returns
     ---------
@@ -660,7 +664,7 @@ def calcFieldPnt(tr_glat, tr_glon, tr_alt, boresight, beam_off, slant_range,
 
             # stop if the altitude is what we want it to be (or close enough)
             new_hdel = abs(xalt - geo_dict['distAlt'])
-            if new_hdel <= htol:
+            if new_hdel <= htol or not eval_loc:
                 break
 
             # stop unsuccessfully if the altitude difference hasn't improved

@@ -20,15 +20,16 @@
 Module generating fan plots
 
 Methods
------------------------------------------
-plotFan     plot a scan of data
-overlayFan  plot a scan of data on a map
------------------------------------------
+-----------------------------------------------------------------------------
+plotFan               Plot a scan of data
+overlayFan            Plot a scan of data on a map
+find_fan_map_limits   Find the map limits for plotting radars with their FoV
+-----------------------------------------------------------------------------
 
 """
 
 from davitpy import utils
-import numpy
+import numpy as np
 import math
 import matplotlib
 import calendar
@@ -192,7 +193,7 @@ def plotFan(sTime, rad, interval=60, fileType='fitex', param='velocity',
         elif(param == 'power'): scale = [0, 30]
         elif(param == 'width'): scale = [0, 150]
         elif(param == 'elevation'): scale = [0, 50]
-        elif(param == 'phi0'): scale = [-numpy.pi, numpy.pi]
+        elif(param == 'phi0'): scale = [-np.pi, np.pi]
 
     fbase = sTime.strftime("%Y%m%d")
 
@@ -265,21 +266,21 @@ def plotFan(sTime, rad, interval=60, fileType='fitex', param='velocity',
     # lat,lon pair to center the map on. We can simply do this by converting
     # from Spherical coords to Cartesian, taking the mean of each coordinate
     # and then converting back to get lat_0 and lon_0
-    lonC, latC = (numpy.array(lonC) + 360.) % 360.0, numpy.array(latC)
-    xs = numpy.cos(numpy.deg2rad(latC)) * numpy.cos(numpy.deg2rad(lonC))
-    ys = numpy.cos(numpy.deg2rad(latC)) * numpy.sin(numpy.deg2rad(lonC))
-    zs = numpy.sin(numpy.deg2rad(latC))
-    xc = numpy.mean(xs)
-    yc = numpy.mean(ys)
-    zc = numpy.mean(zs)
-    lon_0 = numpy.rad2deg(numpy.arctan2(yc, xc))
-    lat_0 = numpy.rad2deg(numpy.arctan2(zc, numpy.sqrt(xc * xc + yc * yc)))
+    lonC, latC = (np.array(lonC) + 360.) % 360.0, np.array(latC)
+    xs = np.cos(np.deg2rad(latC)) * np.cos(np.deg2rad(lonC))
+    ys = np.cos(np.deg2rad(latC)) * np.sin(np.deg2rad(lonC))
+    zs = np.sin(np.deg2rad(latC))
+    xc = np.mean(xs)
+    yc = np.mean(ys)
+    zc = np.mean(zs)
+    lon_0 = np.rad2deg(np.arctan2(yc, xc))
+    lat_0 = np.rad2deg(np.arctan2(zc, np.sqrt(xc * xc + yc * yc)))
 
     # Now do some stuff in map projection coords to get necessary width and
     # height of map and also figure out the corners of the map
     t1 = dt.datetime.now()
-    lonFull, latFull = (numpy.array(lonFull) + 360.) % 360.0, \
-        numpy.array(latFull)
+    lonFull, latFull = (np.array(lonFull) + 360.) % 360.0, \
+        np.array(latFull)
 
     tmpmap = utils.mapObj(coords=coords, projection='stere', width=10.0**3,
                           height=10.0**3, lat_0=lat_0, lon_0=lon_0,
@@ -345,7 +346,7 @@ def plotFan(sTime, rad, interval=60, fileType='fitex', param='velocity',
                               zorder=15, marker='o', linewidths=.5,
                               edgecolor='k', facecolor='w')
             elif(w == 5):
-                y = LineCollection(numpy.array([((xctr - dist / 2., y[1] *
+                y = LineCollection(np.array([((xctr - dist / 2., y[1] *
                                    (.98 - w * .025)), (xctr + dist / 2., y[1] *
                                                        (.98 - w * .025)))]),
                                    linewidths=.5, zorder=15, color='k')
@@ -439,7 +440,7 @@ def plotFan(sTime, rad, interval=60, fileType='fitex', param='velocity',
                                             scMax=poesMax)
         if(pcols is not None):
             cols.append(pcols)
-            pTicks = numpy.linspace(poesMin, poesMax, 8)
+            pTicks = np.linspace(poesMin, poesMax, 8)
             cbar = myFig.colorbar(pcols, ticks=pTicks, orientation='vertical',
                                   shrink=0.65, fraction=.1)
             cbar.ax.set_yticklabels(pTicks)
@@ -615,60 +616,215 @@ def overlayFan(myData, myMap, myFig, param, coords='geo', gsct=0, site=None,
         # if we have data
         if(verts != []):
             if(gsct == 0):
-                inx = numpy.arange(len(verts))
+                inx = np.arange(len(verts))
             else:
-                inx = numpy.where(numpy.array(gs_flg) == 0)
-                x = PolyCollection(numpy.array(verts)[numpy.where(
-                                   numpy.array(gs_flg) == 1)], facecolors='.3',
+                inx = np.where(np.array(gs_flg) == 0)
+                x = PolyCollection(np.array(verts)[np.where(
+                                   np.array(gs_flg) == 1)], facecolors='.3',
                                    linewidths=0, zorder=5, alpha=alpha)
                 myFig.gca().add_collection(x, autolim=True)
 
-            pcoll = PolyCollection(numpy.array(verts)[inx],
+            pcoll = PolyCollection(np.array(verts)[inx],
                                    edgecolors='face', linewidths=0,
                                    closed=False, zorder=4, alpha=alpha,
                                    cmap=cmap, norm=norm)
             # set color array to intensities
-            pcoll.set_array(numpy.array(intensities)[inx])
+            pcoll.set_array(np.array(intensities)[inx])
             myFig.gca().add_collection(pcoll, autolim=True)
             return intensities, pcoll
     else:
         # if we have data
         if(verts != [[], []]):
             if(gsct == 0):
-                inx = numpy.arange(len(verts[0]))
+                inx = np.arange(len(verts[0]))
             else:
-                inx = numpy.where(numpy.array(gs_flg) == 0)
+                inx = np.where(np.array(gs_flg) == 0)
                 # plot the ground scatter as open circles
-                x = myFig.scatter(numpy.array(verts[0])[numpy.where(
-                                  numpy.array(gs_flg) == 1)],
-                                  numpy.array(verts[1])[numpy.where(
-                                      numpy.array(gs_flg) == 1)],
-                                  s=.1 * numpy.array(intensities[1])[
-                                  numpy.where(numpy.array(gs_flg) == 1)],
+                x = myFig.scatter(np.array(verts[0])[np.where(
+                                  np.array(gs_flg) == 1)],
+                                  np.array(verts[1])[np.where(
+                                      np.array(gs_flg) == 1)],
+                                  s=.1 * np.array(intensities[1])[
+                                  np.where(np.array(gs_flg) == 1)],
                                   zorder=5, marker='o', linewidths=.5,
                                   facecolors='w', edgecolors='k')
                 myFig.gca().add_collection(x, autolim=True)
 
             # plot the i-s as filled circles
-            ccoll = myFig.gca().scatter(numpy.array(verts[0])[inx],
-                                        numpy.array(verts[1])[inx],
-                                        s=.1 * numpy.array(
+            ccoll = myFig.gca().scatter(np.array(verts[0])[inx],
+                                        np.array(verts[1])[inx],
+                                        s=.1 * np.array(
                                         intensities[1])[inx], zorder=10,
                                         marker='o', linewidths=.5,
                                         edgecolors='face', cmap=cmap,
                                         norm=norm)
 
             # set color array to intensities
-            ccoll.set_array(numpy.array(intensities[0])[inx])
+            ccoll.set_array(np.array(intensities[0])[inx])
             myFig.gca().add_collection(ccoll)
             # plot the velocity vectors
-            lcoll = LineCollection(numpy.array(lines)[inx], linewidths=.5,
+            lcoll = LineCollection(np.array(lines)[inx], linewidths=.5,
                                    zorder=12, cmap=cmap, norm=norm)
-            lcoll.set_array(numpy.array(intensities[0])[inx])
+            lcoll.set_array(np.array(intensities[0])[inx])
             myFig.gca().add_collection(lcoll)
 
             return intensities, lcoll
 
+def find_fan_map_limits(dtime=None, altitude=0.0, coords="geo", codes=None,
+                        rad_ids=None, sites=None, rseps=45.0, nrangs=75,
+                        fov_dirs="front"):
+    """ Find the map constraints needed to plot a list of radars
+
+    Parameters
+    ------------
+    dtime : (dt.datetime/NoneType)
+        Time to load radar site information or None if sites is used.
+        (default=None)
+    altitude : (float)
+        Altitude for radar fields of view in km (default=0.0)
+    coords : (str)
+        String denoting coordinate system (default='geo')
+    codes : (str/list of str/NoneType)
+        Single or list of three-character radar name or None to use other input
+        (default=None)
+    rad_ids : (int/list of int/NoneType)
+        Single or list of radar integer IDs or None to use other input
+        (default=None)
+    sites : (davitpy.pydarn.radar.radStruct.site/list/NoneType)
+        Single or list of radar site hardware classes or None to load these
+        locally using other input (default=None)
+    rseps : (float or list of floats)
+        Range separation (for each site). (default=45.0)
+    nrangs : (int or list of ints)
+        Number of ranges (for each site). (default=75)
+    fov_dirs : (str or list of strs)
+        Direction of field of view (front or back) (for each site).
+        (default='front')
+
+    Returns
+    --------
+    lon_0 : (float)
+        Map longitude centre
+    lat_0 : (float)
+        Map latitude centre
+    llcrnrlon : (float)
+        Lower corner longitude
+    llcrnrlat : (float)
+        Lower corner latitude
+    urcrnrlon : (float)
+        Upper corner longitude
+    urcrnrlat : (float)
+        Upper corner latitude
+    width : (float)
+        Map width
+    height : (float)
+        Map height
+    """
+    import davitpy.pydarn.radar as radar
+    import datetime as dt
+
+    if sites is not None:
+        if isinstance(sites, radar.radStruct.site):
+            # Recast a single site as a list of sites
+            sites = [sites]
+    else:
+        assert isinstance(dtime, dt.datetime), \
+            logging.error("must specify time for finding map limits")
+
+        sites = list()
+        # First check codes then rad_ids
+        if codes is not None:
+            if isinstance(codes, str) and len(codes) == 3:
+                sites.append(radar.site(code=codes, dt=dtime))
+            else:
+                for code in codes:
+                    sites.append(radar.site(code=code, dt=dtime))
+        elif rad_ids is not None:
+            if isinstance(rad_ids, int):
+                sites.append(radar.site(radId=rad_ids, dt=dtime))
+            else:
+                for rad_id in rad_ids:
+                    sites.append(radar.site(radId=rad_id, dt=dtime))
+
+    assert len(sites) > 0 and isinstance(sites[0], radar.radStruct.site), \
+        logging.error("sites requires a list of radar.radStruct.site")
+
+    if isinstance(rseps, float) or isinstance(rseps, int):
+        rseps = [rseps for site in sites]
+
+    if isinstance(nrangs, float) or isinstance(nrangs, int):
+        nrangs = [nrangs for site in sites]
+
+    if isinstance(fov_dirs, str):
+        fov_dirs = [fov_dirs for site in sites]
+
+    # Make lists of site lats and lons, keeping the radar location and the
+    # extremes of the fields of view.
+    lats = list()
+    lons = list()
+    full_lats = list()
+    full_lons = list()
+    for i,site in enumerate(sites):
+        xlon, xlat = utils.coordUtils.coord_conv(site.geolon, site.geolat,
+                                                 "geo", coords,
+                                                 altitude=altitude,
+                                                 date_time=dtime)
+        lats.append(xlat)
+        lons.append(xlon)
+        full_lats.append(xlat)
+        full_lons.append(xlon)
+        fov_obj = radar.radFov.fov(site=site, rsep=rseps[i], ngates=nrangs[i]+1,
+                                   nbeams=site.maxbeam, coords=coords,
+                                   date_time=dtime, fov_dir=fov_dirs[i])
+        lats.append(fov_obj.latFull[0][nrangs[i]])
+        lons.append(fov_obj.lonFull[0][nrangs[i]])
+        lats.append(fov_obj.latFull[site.maxbeam][nrangs[i]])
+        lons.append(fov_obj.lonFull[site.maxbeam][nrangs[i]])
+
+        for b in range(site.maxbeam + 1):
+            for k in range(nrangs[i] + 1):
+                full_lons.append(fov_obj.lonFull[b][k])
+                full_lats.append(fov_obj.latFull[b][k])
+
+    # Set longitude range and convert lists to numpy arrays
+    full_lons = (np.array(full_lons) + 360.0) % 360.0
+    full_lats = np.array(full_lats)
+    lons = (np.array(lons) + 360.0) % 360.0
+    lats = np.array(lats)
+
+    # Now that we have 3 points from the radar FOVs, calculate the
+    # lat,lon pair to center the map on. We can simply do this by converting
+    # from Spherical coords to Cartesian, taking the mean of each coordinate
+    # and then converting back to get lat_0 and lon_0
+    xs = np.cos(np.deg2rad(lats)) * np.cos(np.deg2rad(lons))
+    ys = np.cos(np.deg2rad(lats)) * np.sin(np.deg2rad(lons))
+    zs = np.sin(np.deg2rad(lats))
+    xc = np.mean(xs)
+    yc = np.mean(ys)
+    zc = np.mean(zs)
+    lon_0 = np.rad2deg(np.arctan2(yc, xc))
+    lat_0 = np.rad2deg(np.arctan2(zc, np.sqrt(xc * xc + yc * yc)))
+
+    # Now do some stuff in map projection coords to get necessary width and
+    # height of map and also figure out the corners of the map
+    tmpmap = utils.mapObj(coords=coords, projection='stere', width=10.0**3,
+                          height=10.0**3, lat_0=lat_0, lon_0=lon_0,
+                          datetime=dtime)
+    x, y = tmpmap(full_lons, full_lats)
+    minx = x.min() * 1.05     # since we don't want the map to cut off labels
+    miny = y.min() * 1.05     # or FOVs of the radars we should alter the
+    maxx = x.max() * 1.05     # extrema a bit.
+    maxy = y.max() * 1.05
+    width = (maxx - minx)
+    height = (maxy - miny)
+    llcrnrlon, llcrnrlat = tmpmap(minx, miny, inverse=True)
+    urcrnrlon, urcrnrlat = tmpmap(maxx, maxy, inverse=True)
+
+    del tmpmap
+    return(lon_0, lat_0, llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat,
+           width, height)
+
+        
 if __name__ == "__main__":
     from datetime import datetime
 
@@ -692,3 +848,4 @@ if __name__ == "__main__":
     print "Now generate a png instead of showing the plot."
     plotFan(time, ["sas", "han"], param="power", coords="mag", gsct=True,
             show=False, png=True)
+
