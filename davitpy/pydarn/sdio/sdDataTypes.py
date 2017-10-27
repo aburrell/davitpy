@@ -317,7 +317,7 @@ class sdDataPtr():
                     # check to see if the files actually have data between
                     # stime and etime
                     valid = self.__validate_fetched(temp, self.sTime,
-                                                    self.eTime)
+                                                    self.eTime, ftype)
 
                     filelist = [x[0] for x in zip(temp, valid) if x[1]]
                     invalid_files = [x[0] for x in zip(temp, valid) if not x[1]]
@@ -432,7 +432,7 @@ class sdDataPtr():
                     # check to see if the files actually have data between
                     # stime and etime
                     valid = self.__validate_fetched(temp, self.sTime,
-                                                    self.eTime)
+                                                    self.eTime, ftype)
                     filelist = [x[0] for x in zip(temp, valid) if x[1]]
                     invalid_files = [x[0] for x in zip(temp, valid) if not x[1]]
 
@@ -524,8 +524,6 @@ class sdDataPtr():
 
         recordDict = {}
         starting_offset = self.offsetTell()
-
-        print "TEST", starting_offset
         
         # rewind back to start of file
         self.rewind()
@@ -533,7 +531,7 @@ class sdDataPtr():
             # read the next record from the dmap file
             offset = self.offsetTell()
             if self.fType.find("ex") == -1:
-                dfile = read_ascii_rec(self.__fd, index=True)
+                dfile = self.read_ascii_rec(index=True)
                 if dfile is None:
                     logging.error("problem reading file")
                 elif len(dfile.keys()) == 0:
@@ -578,8 +576,8 @@ class sdDataPtr():
 
         if force:
             if self.fType.find("ex") == -1:
-                self.__fd.seek(offset)
-                return offset
+                outset = self.__ptr.seek(offset)
+                return outset
             else:
                 return dmapio.setDmapOffset(self.__fd, offset)
         else:
@@ -588,8 +586,8 @@ class sdDataPtr():
 
             if offset in self.recordIndex.values():
                 if self.fType.find("ex") == -1:
-                    self.__fd.seek(offset)
-                    return offset
+                    outset = self.__ptr.seek(offset)
+                    return outset
                 else:
                     return setDmapOffset(self.__fd, offset)
             else:
@@ -598,18 +596,19 @@ class sdDataPtr():
     def offsetTell(self):
         """Determine the byte offset of the record
         """
-        from davitpy.pydarn.dmapio import getDmapOffset
         if self.fType.find("ex") == -1:
-            return self.__fd.tell()
+            offset = self.__ptr.tell()
+            return offset
         else:
+            from davitpy.pydarn.dmapio import getDmapOffset
             return getDmapOffset(self.__fd)
   
     def rewind(self):
         """jump to beginning of dmap file."""
         from davitpy.pydarn.dmapio import setDmapOffset
+
         if self.fType.find("ex") == -1:
-            self.__fd.seek(0)
-            return 0
+            return self.__ptr.seek(0)
         else:
             return setDmapOffset(self.__fd, 0)
   
@@ -646,8 +645,8 @@ class sdDataPtr():
                     prefix = ["model" for i in range(12)]
                     prefix[0] = ""
 
-                dfile = read_ascii_rec(self.__fd, index=False,
-                                       block_key_prefix=prefix)
+                dfile = self.read_ascii_rec(index=False,
+                                            block_key_prefix=prefix)
                 if dfile is None:
                     logging.error("problem reading file")
                 elif len(dfile.keys()) == 0:
@@ -748,7 +747,7 @@ class sdDataPtr():
             while 1:
                 # read the next record from the dmap file
                 if ftype.find('ex') == -1:
-                    dfile = read_ascii_rec(self.__fd, index=True)
+                    dfile = self.read_ascii_rec(index=True)
                     if dfile is None:
                         logging.error("problem reading {:s}".format(f))
                         break
@@ -789,13 +788,11 @@ class sdDataPtr():
 
         return valid
     
-    def read_ascii_rec(fd, index=False, block_key_prefix=[]):
+    def read_ascii_rec(self, index=False, block_key_prefix=[]):
         """ Read a record into a dictionary from an ASCII grd/map file
 
         Parameters
         -----------
-        fd : (file)
-            Open file class object for a 'grd' or 'map' file
         index : (bool)
             Cycle through the block, but only load temporal data (default=False)
         block_key_prefix : (list of str)
@@ -863,22 +860,24 @@ class sdDataPtr():
 
         dfile = dict()
         name_to_key = {"freq0":"freq", "prog_id":"programid", "chn":"channel",
-                       "grid_index":"index"}
+                       "grid_index":"index", "vlos":"velmedian",
+                       "wdt":"wdtmedian", "pwr":"pwrmedian", "gmlong":"mlon",
+                       "gmlat":"mlat", "vlos_sd":"velsd"}
 
         # The first line contains the starting and ending times of the record
-        fsplit = test_ascii_line(fd.readline(), 12)
+        fsplit = test_ascii_line(self.__ptr.readline(), 12)
         if fsplit is None:
             return dfile
     
-        dfile = {'start.year':fsplit[0], 'start.month':fsplit[1],
-                 'start.day':fsplit[2], 'start.hour':fsplit[3],
-                 'start.minute':fsplit[4], 'start.second':fsplit[5],
-                 'end.year':fsplit[6], 'end.month':fsplit[7],
-                 'end.day':fsplit[8], 'end.hour':fsplit[9],
-                 'end.minute':fsplit[10], 'end.second':fsplit[11]}
+        dfile = {'start.year':int(fsplit[0]), 'start.month':int(fsplit[1]),
+                 'start.day':int(fsplit[2]), 'start.hour':int(fsplit[3]),
+                 'start.minute':int(fsplit[4]), 'start.second':int(fsplit[5]),
+                 'end.year':int(fsplit[6]), 'end.month':int(fsplit[7]),
+                 'end.day':int(fsplit[8]), 'end.hour':int(fsplit[9]),
+                 'end.minute':int(fsplit[10]), 'end.second':int(fsplit[11])}
 
         # Get the number of blocks in this record
-        fsplit = test_ascii_line(df.readline(), 1)
+        fsplit = test_ascii_line(self.__ptr.readline(), 1)
         if fsplit is None:
             logging.warning("unable to read number of blocks")
             return None
@@ -887,7 +886,7 @@ class sdDataPtr():
 
         for iblock in range(nblocks):
             # Get the dimensions of this block
-            fsplit = test_ascii_line(fd.readline(), 2)
+            fsplit = test_ascii_line(self.__ptr.readline(), 2)
             if fsplit is None:
                 estr = "can't retrieve the dimensions of block "
                 estr += "{:d}".format(iblock)
@@ -897,7 +896,7 @@ class sdDataPtr():
             ncols = int(fsplit[1])
 
             # Get the name of the data values
-            dname = test_ascii_line(fd.readline(), ncols)
+            dname = test_ascii_line(self.__ptr.readline(), ncols)
             if dname is None:
                 estr = "can't retrieve column names for block "
                 estr += "{:d}".format(iblock)
@@ -906,7 +905,8 @@ class sdDataPtr():
 
             if not index:
                 prefix = ""
-                if len(block_key_prefix) > iblock:
+                if(len(block_key_prefix) > iblock and
+                   len(block_key_prefix[iblock]) > 0):
                     prefix = "{:s}.".format(block_key_prefix[iblock])
 
                 for i,name in enumerate(dname):
@@ -920,17 +920,18 @@ class sdDataPtr():
 
             # Get the data type for each column, skip the line with units as
             # those are not saved by davitpy
-            fd.readline()
-            dtype = test_ascii_line(fd.readline(), ncols)
+            self.__ptr.readline()
+            dtype = test_ascii_line(self.__ptr.readline(), ncols)
             if dtype is None:
                 estr = "can't retrieve column dtypes for block "
                 estr += "{:d}".format(iblock)
                 logging.warning(estr)
+                sys.exit(1)
                 return None
 
             # Read in all of the data for this block
             for irow in range(nrows):
-                fsplit = test_ascii_line(fd.readline(), ncols)
+                fsplit = test_ascii_line(self.__ptr.readline(), ncols)
                 if fsplit is None:
                     estr = "can't retrieve row {:d} ".format(irow)
                     estr += "for block {:d}".format(iblock)
