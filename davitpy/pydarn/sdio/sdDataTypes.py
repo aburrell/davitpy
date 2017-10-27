@@ -48,6 +48,7 @@ class sdDataPtr():
         hemisphere of data interested in
     fileType : str
         the type of file: 'grd', 'grdex', 'map', or 'mapex'
+        Ability to read the new 'grdmap' files is currently missing
     eTime : Optional[datetime]
         end time of the request.  If none, then a full day is
         requested.
@@ -182,7 +183,7 @@ class sdDataPtr():
     
         if self.eTime == None:
             self.eTime = self.sTime + dt.timedelta(days=1)
-    
+
         filelist = []
         arr = [fileType]
         if try_file_types:
@@ -208,7 +209,7 @@ class sdDataPtr():
             os.makedirs(d)
 
         cached = False
-
+        
         # First, check if a specific filename was given
         if fileName != None:
             try:
@@ -268,6 +269,8 @@ class sdDataPtr():
         if not cached and (src == None or src == 'local') and fileName == None:
             try:
                 for ftype in arr:
+                    if ftype == "grdex":
+                        break
                     estr = "\nLooking locally for {:s} files ".format(ftype)
                     estr = "{:s}with hemi: {:s}".format(estr, hemi)
                     logging.info(estr)
@@ -315,6 +318,7 @@ class sdDataPtr():
                     # stime and etime
                     valid = self.__validate_fetched(temp, self.sTime,
                                                     self.eTime)
+
                     filelist = [x[0] for x in zip(temp, valid) if x[1]]
                     invalid_files = [x[0] for x in zip(temp, valid) if not x[1]]
 
@@ -332,7 +336,6 @@ class sdDataPtr():
                         self.dType = 'dmap'
                         fileType = ftype
                         break
-    
                     else:
                         estr = "couldn't find any local {:s}".format(ftype)
                         logging.info(estr)
@@ -522,12 +525,22 @@ class sdDataPtr():
         recordDict = {}
         starting_offset = self.offsetTell()
 
+        print "TEST", starting_offset
+        
         # rewind back to start of file
         self.rewind()
         while 1:
             # read the next record from the dmap file
-            offset = dmapio.getDmapOffset(self.__fd)
-            dfile = dmapio.readDmapRec(self.__fd)
+            offset = self.offsetTell()
+            if self.fType.find("ex") == -1:
+                dfile = read_ascii_rec(self.__fd, index=True)
+                if dfile is None:
+                    logging.error("problem reading file")
+                elif len(dfile.keys()) == 0:
+                    dfile = None
+            else:
+                dfile = dmapio.readDmapRec(self.__fd)
+
             if dfile is None:
                 # if we dont have valid data, clean up, get out
                 logging.info('reached end of data')
@@ -564,29 +577,44 @@ class sdDataPtr():
         from davitpy.pydarn.dmapio import setDmapOffset, getDmapOffset
 
         if force:
-            return dmapio.setDmapOffset(self.__fd, offset)
+            if self.fType.find("ex") == -1:
+                self.__fd.seek(offset)
+                return offset
+            else:
+                return dmapio.setDmapOffset(self.__fd, offset)
         else:
             if self.recordIndex is None:        
                 self.createIndex()
 
             if offset in self.recordIndex.values():
-                return setDmapOffset(self.__fd, offset)
+                if self.fType.find("ex") == -1:
+                    self.__fd.seek(offset)
+                    return offset
+                else:
+                    return setDmapOffset(self.__fd, offset)
             else:
-                return getDmapOffset(self.__fd)
+                return self.offsetTell()
 
     def offsetTell(self):
-        """jump to dmap record at supplied byte offset. 
+        """Determine the byte offset of the record
         """
         from davitpy.pydarn.dmapio import getDmapOffset
-        return getDmapOffset(self.__fd)
+        if self.fType.find("ex") == -1:
+            return self.__fd.tell()
+        else:
+            return getDmapOffset(self.__fd)
   
     def rewind(self):
         """jump to beginning of dmap file."""
-        from davitpy.pydarn.dmapio import setDmapOffset 
-        return setDmapOffset(self.__fd, 0)
+        from davitpy.pydarn.dmapio import setDmapOffset
+        if self.fType.find("ex") == -1:
+            self.__fd.seek(0)
+            return 0
+        else:
+            return setDmapOffset(self.__fd, 0)
   
     def readRec(self):
-        """A function to read a single record of radar data from a radDataPtr
+        """A function to read a single record of radar data from a sdDataPtr
         object
 
         Returns
@@ -610,8 +638,23 @@ class sdDataPtr():
         # do this until we reach the requested start time
         # and have a parameter match
         while 1:
-            offset = dmapio.getDmapOffset(self.__fd)
-            dfile = dmapio.readDmapRec(self.__fd)
+            offset = self.offsetTell()
+            if self.fType.find("ex") == -1:
+                if self.fType.find("grd") == 0:
+                    prefix = ["", "vector"]
+                else:
+                    prefix = ["model" for i in range(12)]
+                    prefix[0] = ""
+
+                dfile = read_ascii_rec(self.__fd, index=False,
+                                       block_key_prefix=prefix)
+                if dfile is None:
+                    logging.error("problem reading file")
+                elif len(dfile.keys()) == 0:
+                    dfile = None
+            else:
+                dfile = dmapio.readDmapRec(self.__fd)
+
             # check for valid data
             try:
                 dtime = dt.datetime(dfile['start.year'], dfile['start.month'],
@@ -660,7 +703,7 @@ class sdDataPtr():
             self.__ptr.close()
             self.__fd = None
 
-    def __validate_fetched(self, filelist, stime, etime):
+    def __validate_fetched(self, filelist, stime, etime, ftype):
         """ This function checks if the files in filelist contain data
         for the start and end times (stime,etime) requested by a user.
 
@@ -672,6 +715,8 @@ class sdDataPtr():
             Starting time for files
         etime : (datetime.datetime)
             Ending time for files
+        ftype : (str)
+            File type: 'grd', 'grdex', 'map', 'mapex'
 
         Returns
         --------
@@ -687,9 +732,9 @@ class sdDataPtr():
         import numpy as np
         from davitpy.pydarn.dmapio import readDmapRec
 
-        valid = []
+        valid = [False for f in filelist]
 
-        for f in filelist:
+        for i,f in enumerate(filelist):
             logging.info('Checking file: {:s}'.format(f))
             stimes = []
             etimes = []
@@ -702,8 +747,17 @@ class sdDataPtr():
             # integration and calculate the end time from intt.sc and intt.us
             while 1:
                 # read the next record from the dmap file
-                dfile = readDmapRec(self.__fd)
-                if(dfile is None):
+                if ftype.find('ex') == -1:
+                    dfile = read_ascii_rec(self.__fd, index=True)
+                    if dfile is None:
+                        logging.error("problem reading {:s}".format(f))
+                        break
+                    if len(dfile.keys()) == 0:
+                        dfile = None
+                else:
+                    dfile = readDmapRec(self.__fd)
+
+                if dfile is None:
                     break
                 else:
                     temp = dt.datetime(int(dfile['start.year']),
@@ -731,11 +785,163 @@ class sdDataPtr():
                             (np.array(etimes) <= etime))
 
             if np.size(inds) > 0 or np.size(inde) > 0:
-                valid.append(True)
-            else:
-                valid.append(False) # ISSUE 217: FASTER TO NOT USE APPEND
+                valid[i] = True
 
         return valid
+    
+    def read_ascii_rec(fd, index=False, block_key_prefix=[]):
+        """ Read a record into a dictionary from an ASCII grd/map file
+
+        Parameters
+        -----------
+        fd : (file)
+            Open file class object for a 'grd' or 'map' file
+        index : (bool)
+            Cycle through the block, but only load temporal data (default=False)
+        block_key_prefix : (list of str)
+            Prefix to add to keys of a certain block (default=[])
+
+        Returns
+        ----------
+        dfile : (dict/NoneType)
+            File dictionary or None if there was an error reading a block.
+            If there are no more blocks, the file dictionary will be empty.
+        """
+        def test_ascii_line(fline, nval=-1, fsplit=None):
+            """ Test for premature end of line and number of values
+
+            Parameters
+            -----------
+            fline : (str)
+                File line
+            nval : (int)
+                Expected number of values, or -1 to not perform this test
+                (default=-1)
+            fsplit : (str/NoneType)
+                String to split file line or None to split on whitespace 
+                (default=None)
+
+            Returns
+            ---------
+            fdata : (list)
+                 List of strings or None if tests fail
+            """
+            if fline is not None:
+                fdata = fline.split(fsplit)
+
+                if nval == -1 or len(fdata) == nval:
+                    return fdata
+
+            return None
+
+        def cast_str(val_str, dtype):
+            """ Recast a string using a specified class
+
+            Parameters
+            ------------
+            val_str : (str)
+                Value string
+            dtype : (str)
+                Class type ('int', 'float', 'bool', 'str').  If dtype is
+                unknown, a string is returned.
+
+            Returns
+            ---------
+            val : (dtype)
+                Value
+            """
+            if dtype.find('int') >= 0:
+                val = int(val_str)
+            elif dtype.find('float') >= 0:
+                val = float(val_str)
+            elif dtype.find('bool') >= 0:
+                val = bool(val_str)
+            else:
+                val = val_str
+        
+            return val
+
+        dfile = dict()
+        name_to_key = {"freq0":"freq", "prog_id":"programid", "chn":"channel",
+                       "grid_index":"index"}
+
+        # The first line contains the starting and ending times of the record
+        fsplit = test_ascii_line(fd.readline(), 12)
+        if fsplit is None:
+            return dfile
+    
+        dfile = {'start.year':fsplit[0], 'start.month':fsplit[1],
+                 'start.day':fsplit[2], 'start.hour':fsplit[3],
+                 'start.minute':fsplit[4], 'start.second':fsplit[5],
+                 'end.year':fsplit[6], 'end.month':fsplit[7],
+                 'end.day':fsplit[8], 'end.hour':fsplit[9],
+                 'end.minute':fsplit[10], 'end.second':fsplit[11]}
+
+        # Get the number of blocks in this record
+        fsplit = test_ascii_line(df.readline(), 1)
+        if fsplit is None:
+            logging.warning("unable to read number of blocks")
+            return None
+
+        nblocks = int(fsplit[0])
+
+        for iblock in range(nblocks):
+            # Get the dimensions of this block
+            fsplit = test_ascii_line(fd.readline(), 2)
+            if fsplit is None:
+                estr = "can't retrieve the dimensions of block "
+                estr += "{:d}".format(iblock)
+                logging.warning(estr)
+                return None
+            nrows = int(fsplit[0])
+            ncols = int(fsplit[1])
+
+            # Get the name of the data values
+            dname = test_ascii_line(fd.readline(), ncols)
+            if dname is None:
+                estr = "can't retrieve column names for block "
+                estr += "{:d}".format(iblock)
+                logging.warning(estr)
+                return None
+
+            if not index:
+                prefix = ""
+                if len(block_key_prefix) > iblock:
+                    prefix = "{:s}.".format(block_key_prefix[iblock])
+
+                for i,name in enumerate(dname):
+                    if name in name_to_key.keys():
+                        key = "{:s}{:s}".format(prefix, name_to_key[name])
+                    else:
+                        key = "{:s}{:s}".format(prefix, name.replace("_", ""))
+
+                    dfile[key] = list()
+                    dname[i] = key
+
+            # Get the data type for each column, skip the line with units as
+            # those are not saved by davitpy
+            fd.readline()
+            dtype = test_ascii_line(fd.readline(), ncols)
+            if dtype is None:
+                estr = "can't retrieve column dtypes for block "
+                estr += "{:d}".format(iblock)
+                logging.warning(estr)
+                return None
+
+            # Read in all of the data for this block
+            for irow in range(nrows):
+                fsplit = test_ascii_line(fd.readline(), ncols)
+                if fsplit is None:
+                    estr = "can't retrieve row {:d} ".format(irow)
+                    estr += "for block {:d}".format(iblock)
+                    logging.warning(estr)
+                    return None
+
+                if not index:
+                    for i,val in enumerate(fsplit):
+                        dfile[dname[i]].append(cast_str(val, dtype[i]))
+
+        return dfile
 
 class sdBaseData():
     """A base class for the processed SD data types.  This allows for single
