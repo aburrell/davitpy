@@ -575,6 +575,8 @@ def overlayFan(myData, myMap, myFig, param, coords='geo', gsct=0, site=None,
                     intensities.append(myBeam.fit.elv[k])
                 elif(param == 'phi0' and myBeam.prm.xcf):
                     intensities.append(myBeam.fit.phi0[k])
+                elif hasattr(myBeam.fit, param):
+                    intensities.append(getattr(myBeam.fit, param)[k])
 
             else:
                 x1, y1 = myMap(fov.lonCenter[myBeam.bmnum, r],
@@ -603,6 +605,8 @@ def overlayFan(myData, myMap, myFig, param, coords='geo', gsct=0, site=None,
                     intensities[0].append(myBeam.fit.elv[k])
                 elif(param == 'phi0' and myBeam.prm.xcf):
                     intensities[0].append(myBeam.fit.phi0[k])
+                elif hasattr(myBeam.fit, param):
+                    intensities.append(getattr(myBeam.fit, param)[k])
 
                 if(myBeam.fit.p_l[k] > 0):
                     intensities[1].append(myBeam.fit.p_l[k])
@@ -666,7 +670,10 @@ def overlayFan(myData, myMap, myFig, param, coords='geo', gsct=0, site=None,
             lcoll = LineCollection(np.array(lines)[inx], linewidths=.5,
                                    zorder=12, cmap=cmap, norm=norm)
             lcoll.set_array(np.array(intensities[0])[inx])
-            myFig.gca().add_collection(lcoll)
+            if hasattr(myMap, "ax") and myMap.ax is not None:
+                myMap.ax.add_collection(lcoll)
+            else:
+                myFig.gca().add_collection(lcoll)
 
             return intensities, lcoll
 
@@ -809,7 +816,7 @@ def find_fan_map_limits(dtime=None, altitude=0.0, coords="geo", codes=None,
     # height of map and also figure out the corners of the map
     tmpmap = utils.mapObj(coords=coords, projection='stere', width=10.0**3,
                           height=10.0**3, lat_0=lat_0, lon_0=lon_0,
-                          datetime=dtime)
+                          datetime=dtime, showCoords=False, draw=False)
     x, y = tmpmap(full_lons, full_lats)
     minx = x.min() * 1.05     # since we don't want the map to cut off labels
     miny = y.min() * 1.05     # or FOVs of the radars we should alter the
