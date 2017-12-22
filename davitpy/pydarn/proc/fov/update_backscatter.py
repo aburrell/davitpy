@@ -1247,8 +1247,7 @@ def update_bs_w_scan(scan, hard, min_pnts=3,
                     irg_half = int(np.floor(rg_half))
                     min_si = si - irg_half if si >= irg_half else 0
                     max_si = (si + irg_half if si + irg_half < hard.maxgate
-                              else (hard.maxgate - 1
-                                    if hard.maxgate < max(rg_max)
+                              else (hard.maxgate if hard.maxgate < max(rg_max)
                                     else max(rg_max) - 1))
 
                     # Load the front and back elevations for this range gate
