@@ -343,7 +343,7 @@ class updateRadars(object):
             result = self.__readFromFiles()
             if not result:
                 logging.error('Could not update .radars.sqlite file with \
-                              hdw.dat info')
+                              local hdw.dat info')
             return result
 
     def sqlInit(self):
