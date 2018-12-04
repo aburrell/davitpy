@@ -7,7 +7,7 @@
 #           radars.  These would be better saved and accessed through a table,
 #           so as to allow for temporal updates.
 #-----------------------------------------------------------------------------
-'''Define and retrieve transmission frequency bands for the SuperDARN radars.
+"""Define and retrieve transmission frequency bands for the SuperDARN radars.
 
 Parameters
 ----------------------------------------------------------------------------
@@ -25,7 +25,7 @@ radFreqBands
 Moduleauthor
 ------------
 Angeline G. Burrell (AGB), 25 July 2016, University of Leicester (UoL)
-'''
+"""
 import logging
 
 # Define the frequency bands for different radars
@@ -38,14 +38,15 @@ rad_band_num = {
 #    'bks':[0],
 #    'cly':[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
 #           25,26],
+    'cve':[0, 1, 2],
+    'cvw':[0, 1, 2],
     'gbr':[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
            25],
     'hal':[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
            25,26,27,28,29,30,31,32,33,34],
     'han':[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14],
     'hok':[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-#    'inv':[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
-#           25,26,27,28,29],
+    'inv':[0,1,2,3],
     'kap':[37,38,39,40,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
            25,26,27,28,29,10,9,8,7,6,5,4],
     'kod':[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
@@ -81,6 +82,8 @@ rad_min = {
 #    'cly':[8000, 8500, 9000, 9500, 10000, 10500, 11000, 11500, 12000, 12500,
 #           13000, 13469, 13929, 14500, 15040, 15500, 16000, 16500, 17000, 17500,
 #           18000, 18500, 19000, 19500, 20040, 20500],
+    'cve':[10300, 10600, 14700],
+    'cvw':[10300, 10600, 14700],
     'gbr':[8900, 9201, 9500, 9966, 10199, 10698, 10900, 11199, 11696,
            11900, 12201, 12501, 12801, 13291, 13592, 13989, 14199,
            14500, 15040, 15400, 15840, 16141, 16399, 16900, 17400,
@@ -94,10 +97,7 @@ rad_min = {
            17970, 18850, 19415, 19705, 19800],
     'hok':[9100, 10700, 11000, 13000, 14000, 14300, 14600, 14900, 15200, 15500,
            15800, 16100, ],
-#    'inv':[8000, 8500, 9000, 9500, 10000, 10300, 10601, 11000, 11500, 11900,
-#           12200, 12501, 13000,  13500, 14000, 14500, 15000, 15500, 16000,
-#           16500, 17000, 17500, 18000, 18500, 19000, 19500, 20000, 20500, 21000,
-#           21500],
+    'inv':[10299, 10600, 12199, 12500],
     'kap':[8900, 9201, 9600, 9966, 10200, 10501, 10701, 11000, 11430,
            11800, 12100, 12400, 12700, 13000, 13301, 13551, 13971,
            14380, 14701, 15100, 15400, 15701, 16141, 16399, 16900,
@@ -144,6 +144,8 @@ rad_max = {
 #    'cly':[8500, 9000, 9500, 10000, 10500, 11000, 11500, 12000, 12500, 13000,
 #           13469, 13929, 14500, 15040, 15500, 16000, 16500, 17000, 17500, 18000,
 #           18500, 19000, 19500, 20040, 20500, 21000],
+    'cve':[10599, 10899, 14999],
+    'cvw':[10599, 10899, 14999],
     'gbr':[9200, 9499, 9965, 10198, 10697, 10899, 11198, 11695, 11899,
            12200, 12500, 12800, 13290, 13591, 13988, 14198, 14499,
            14960, 15399,15700, 16140, 16398, 16899,17399, 17870,
@@ -157,10 +159,7 @@ rad_max = {
            18050, 18865, 19680, 19755, 19990],
     'hok':[9400, 10999, 11300, 13300, 14299, 14599, 14899, 15199, 15499, 15799,
            16099, 16399, ],
-#    'inv':[8500, 9000, 9500, 10000, 10299, 10600, 11000, 11500, 11900, 12199,
-#           12500, 13000,  13500, 14000, 14500, 15000, 15500, 16000, 16500,
-#           17000, 17500, 18000, 18500, 19000, 19500, 20000, 20500, 21000, 21500,
-#           22000],
+    'inv':[10599, 10900, 12499, 12800],
     'kap':[9200, 9599, 9965, 10199, 10500, 10700, 10999, 11429, 11799,
            12099, 12399, 12699, 12999, 13300, 13550, 13970, 14379,
            14700, 15099, 15399, 15700, 16140, 16398, 16899, 17399,
@@ -205,11 +204,11 @@ id_to_code = {1:'gbr', 2:'sch', 3:'kap', 4:'hal', 5:'sas', 6:'pgr', 7:'kod',
               8:'sto', 9:'pyk', 10:'han', 11:'san', 12:'sys', 13:'sye',
               14:'tig', 15:'ker', 16:'ksr', 18:'unw', 20:'mcm', 21:'fir',
               32:'wal', 33:'bks', 40:'hok', 64:'inv', 65:'rkn', 128:'spe',
-              209:'ade', 208:'adw',}
+              206:'cvw', 207:'cve', 208:'adw', 209:'ade'}
 
 #-----------------------------------------------------------------------------
 class radFreqBands(object):
-    '''Contains the transmission frequency bands for a given radar
+    """Contains the transmission frequency bands for a given radar
 
     Parameters
     ------------
@@ -236,7 +235,7 @@ class radFreqBands(object):
     get_tfreq_band_num
 
     written by AGB 25/07/16
-    '''
+    """
     def __init__(self, rad=None):
 
         # Assign the radar IDs
@@ -266,7 +265,7 @@ class radFreqBands(object):
             self.tmaxs = list()
 
     def __str__(self):
-        '''Object string representation
+        """Object string representation
 
         Parameters
         ----------
@@ -301,7 +300,7 @@ class radFreqBands(object):
                 12 19.415-19.680
                 13 19.705-19.755
                 14 19.800-19.990
-        '''
+        """
         ostr = "Radar transmission frequency bands:\n"
         # Add radar name
         ostr = "{:s}\tCode: {:}\tID: {:}\n".format(ostr, self.rad_code,
@@ -325,7 +324,7 @@ class radFreqBands(object):
 
     #--------------------------------------------------------------------------
     def get_tband_max_min(self, tfreq):
-        '''Return the maximum and minimum frequency for the band that the
+        """Return the maximum and minimum frequency for the band that the
         supplied frequency falls into
 
         Parameters
@@ -339,7 +338,7 @@ class radFreqBands(object):
             Minimum frequency in kHz, -1 if unavailable
         max_freq : (int)
             Maximum frequency in kHz, -1 if unavailable
-        '''
+        """
         #------------------------------------------------
         # Cycle through the transmission frequency bands
         for i,t in enumerate(self.tmins):
@@ -350,7 +349,7 @@ class radFreqBands(object):
         return(-1, -1)
 
     def get_mean_tband_freq(self, tband):
-        ''' Return the maximum and minimum frequency for the band that the
+        """ Return the maximum and minimum frequency for the band that the
         supplied frequency falls into
 
         Parameters
@@ -362,7 +361,7 @@ class radFreqBands(object):
         -----------
         mean_freq : (int)
             Mean frequency in kHz, -1 if unavailable
-        '''
+        """
         mean_freq = -1
             
         #--------------------------------------------
@@ -377,7 +376,7 @@ class radFreqBands(object):
         return mean_freq
 
     def get_tfreq_band_num(self, tfreq):
-        ''' Retrieve the transmision frequency band number for a specified
+        """ Retrieve the transmision frequency band number for a specified
         frequency
 
         Parameters
@@ -389,7 +388,7 @@ class radFreqBands(object):
         ---------
         tband : (int)
             Transmission frequency band number, -1 if unavailable
-        '''
+        """
         #--------------------------------------------
         # Cycle through the different frequency bands
         for i,t in enumerate(self.tmins):
