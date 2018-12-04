@@ -9,9 +9,9 @@
 
 Functions
 -------------------------------------------------------------------------------
-test_simplex               Test the rigorous_simplex routine in simplex.py
-han_heater_field_line_lat  Trace basic field-lines for HAN-heater combos
-test_calc_tdiff            Test calc_tdiff for an example from the RS article
+test_simplex           Test the rigorous_simplex routine in simplex.py
+heater_field_line_lat  Trace basic field-lines for CUTLASS-heater combos
+test_calc_tdiff        Test calc_tdiff for an example from the RS article
 -------------------------------------------------------------------------------
 
 References
@@ -131,7 +131,7 @@ def test_simplex(plot_handle=None):
 
     return min0, min1, min2
 
-def han_heater_field_line_lat(alt, heater="Tromso"):
+def heater_field_line_lat(alt, rad="han", heater="Tromso"):
     '''Calculate the latitude for a field line irregularity produced by heater
     and observed by Hankasalmi
 
@@ -139,19 +139,47 @@ def han_heater_field_line_lat(alt, heater="Tromso"):
     --------------
     alt : (float or np.ndarray)
         Altitude in kilometers
+    rad : (str)
+        Radar name (han or pyk, case insensitive) (default='han')
     heater : (str)
-        Heater name (SPEAR or Tromso, case insensitive) (default="Tromso")
+        Heater name (SPEAR or Tromso, case insensitive) (default='Tromso')
 
     Returns
     lat : (float or np.ndarray)
         Latitude in degrees
     '''
-
     heater_lat = 78.15 if heater.lower() == "spear" else 69.90
-    heater_ang = 7.7 if heater.lower() == "spear" else 12.0
-    line_lat = heater_lat - (alt * np.tan(np.radians(heater_ang)) / 111.0)
+
+    if rad.lower() == "han":
+        heater_ang = 7.7 if heater.lower() == "spear" else 12.0
+    elif rad.lower() == "pyk" and heater.lower() == "spear":
+        heater_ang = 3.8
+    else:
+        return np.nan
     
+    line_lat = heater_lat - (alt * np.tan(np.radians(heater_ang)) / 111.0)
+            
     return line_lat
+
+def pyk_tromso_field_line_lon(alt):
+    '''Calculate the latitude for a field line irregularity produced by heater
+    and observed by Hankasalmi
+
+    Parameters
+    --------------
+    alt : (float or np.ndarray)
+        Altitude in kilometers
+
+    Returns
+    lon : (float or np.ndarray)
+        Longitude in degrees
+    '''
+
+    heater_lon = 19.2
+    heater_ang = 0.0
+    line_lon = heater_lon #Zero: - (alt * np.tan(np.radians(heater_ang))/111.0)
+    
+    return line_lon
 
 def test_calc_tdiff(file_type="fitacf", password=True, tdiff_plot=None):
     '''Test calc_tdiff
@@ -240,10 +268,11 @@ def test_calc_tdiff(file_type="fitacf", password=True, tdiff_plot=None):
     # Set the reference location
     tperiod = 1000.0 / rad_bands.get_mean_tband_freq(tb)
     ref_alt = 230.0
-    ref_lat = han_heater_field_line_lat(ref_alt, heater="tromso")
-    ref_err = max(abs(han_heater_field_line_lat(np.array([ref_alt - 10.0,
-                                                          ref_alt + 10.0]),
-                                                heater="tromso") - ref_lat))
+    ref_lat = heater_field_line_lat(ref_alt, rad="han", heater="tromso")
+    ref_err = max(abs(heater_field_line_lat(np.array([ref_alt - 10.0,
+                                                      ref_alt + 10.0]),
+                                            rad="han",
+                                            heater="tromso") - ref_lat))
     ttol = 1.0e-4
     fovflg = [1 for i in sdata["phi0"]]
     bm_az = [np.radians(hard.beamToAzim(b) - hard.boresite)
@@ -389,7 +418,7 @@ def test_calc_tdiff(file_type="fitacf", password=True, tdiff_plot=None):
         # Add the reference locations to a twin of the histogram plot
         hax2 = hax.twinx()
         line_alt = np.arange(0.0, 315.0, 15.0)
-        line_lat = han_heater_field_line_lat(line_alt, heater="tromso")
+        line_lat = heater_field_line_lat(line_alt, rad="han", heater="tromso")
         hax2.plot(line_lat, line_alt, "k-", linewidth=4)
         hax2.plot([xmin, xmax], [ref_alt, ref_alt], "k:")
         hax2.plot([ref_lat, ref_lat], [0, 300], "k--", linewidth=2)
