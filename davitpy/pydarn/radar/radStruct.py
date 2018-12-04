@@ -63,6 +63,7 @@ class network(object):
         import davitpy
 
         self.radars = []
+        self.nradar = 0
         # Get DB name
         try:
             rad_path = davitpy.rcParams['DAVIT_TMPDIR']
