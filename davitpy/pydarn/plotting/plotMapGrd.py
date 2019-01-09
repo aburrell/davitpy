@@ -349,9 +349,18 @@ class MapConv(object):
         if annotateTime:
             self.axisHandle.set_title(date_str, fontsize="medium")
 
-    def calcFitCnvVel(self):
+    def calcFitCnvVel(self, mlats_plot=None, mlons_plot=None):
         """Calculate fitted convection velocity magnitude and azimuth from
         map data (basically coefficients of the fit)
+
+        Parameters
+        ----------
+        mlats_plot : (list or NoneType)
+            List of map latitudes to calculate velocity at or None
+            (default=None)
+        mlons_plot : (list or NoneType)
+            List of map longitudes to calculate velocity at or None
+            (default=None)
 
         Returns
         ---------
@@ -373,16 +382,12 @@ class MapConv(object):
         # Test to make sure the necessary attributes have been set
         assert self.mapData is not None, logging.error("no map data available")
 
-        if self.hemi == 'north' :
-            hemisphere = 1
-        else :
-            hemisphere = -1
+        hemisphere = 1 if self.hemi == 'north' else -1
 
         # get the standard location/LoS(grid) Vel parameters.
-        mlats_plot = self.mapData.grid.vector.mlat
-        mlons_plot = self.mapData.grid.vector.mlon
-        vels_plot = self.mapData.grid.vector.velmedian
-        azms_plot = self.mapData.grid.vector.kvect
+        if mlats_plot is None or mlons_plot is None:
+            mlats_plot = self.mapData.grid.vector.mlat
+            mlons_plot = self.mapData.grid.vector.mlon
 
         # Alright we have the parameters but we need to calculate the coeffs
         # for eField and then calc eField and Fitted Vels.
@@ -441,10 +446,8 @@ class MapConv(object):
         theta_ecoeffs = np.zeros((kmax + 2, len(theta)))
         phi_ecoeffs = np.zeros((kmax + 2, len(theta)))
 
-        qprime = np.array(np.where(theta_prime != 0.0))
-        qprime = qprime[0]
-        q = np.array(np.where(theta != 0.0))
-        q = q[0]
+        qprime = np.array(np.where(theta_prime != 0.0))[0]
+        q = np.array(np.where(theta != 0.0))[0]
 
         # finally get to converting coefficients for the potential into
         # coefficients for elec. Field
@@ -466,11 +469,7 @@ class MapConv(object):
                         coeff_fit_flat[k3] * m / np.sin(theta[q]) / \
                         self.radEarthMtrs
 
-                if l < order_fit:
-                    k1 = indexLgndr(l+1, m)
-                else:
-                    k1 = -1
-
+                k1 = indexLgndr(l+1, m) if l < order_fit else -1
                 k2 = indexLgndr(l, m)
 
                 if k1 >= 0:
@@ -538,8 +537,7 @@ class MapConv(object):
 
         vel_mag = np.sqrt(np.square(vel_fit_vecs[0,:]) +
                           np.square(vel_fit_vecs[1,:]))
-        vel_chk_zero_inds = np.where(vel_mag != 0.0)
-        vel_chk_zero_inds = vel_chk_zero_inds[0]
+        vel_chk_zero_inds = np.where(vel_mag != 0.0)[0]
 
         vel_azm = np.zeros(vel_mag.shape)
 
@@ -676,8 +674,7 @@ class MapConv(object):
         # but in case they are not... we print out a message...
         # you need an extra bit of code to account for the lat shift
         if lat_shft_fit == 0.0:
-            q = np.array(np.where(np.abs(zat_arr) <= np.abs(lat_min_fit)))
-            q = q[0]
+            q = np.where(np.abs(zat_arr) <= np.abs(lat_min_fit))[0]
 
             if len(q) != 0:
                 pot_arr[:,q] = 0
